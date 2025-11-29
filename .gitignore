@@ -1,0 +1,29 @@
+# Env files
+.env
+.env.*        # estää .env.local, .env.production jne.
+!.env.example # pidä esimerkkitiedosto versiossa
+
+# SSH keys (projektin juuressa)
+id_ed25519
+id_ed25519.pub
+id_rsa
+id_rsa.pub
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env-venv/
+
+# SQLite / local DB
+*.db
+/var/lib/ollama_analytics/analytics.db
+
+# Logs
+*.log
+/var/log/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

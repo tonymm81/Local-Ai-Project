@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11435:11434"
+    environment:
+      - OLLAMA_DEBUG=DEBUG
+    volumes:
+      - ../ollama_data:/root/.ollama
+      - /mnt/tonidata/AgentOllamaDeepseek/agent:/root/agent
+    networks:
+      - internal_net
+    restart: unless-stopped
+
+  mariadb:
+    image: mariadb:10.11
+    container_name: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ../mariadb_data:/var/lib/mysql
+    networks:
+      - internal_net
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    extra_hosts:
+      - "registry.ollama.ai:8.8.8.8"
+
+  agent:
+    build:
+      context: ../agent
+    container_name: localai-agent
+    volumes:
+      - ../agent:/app
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+      OLLAMA_URL: ${OLLAMA_URL}
+      OLLAMA_MODEL: ${OLLAMA_MODEL}
+      APP_TITLE: ${APP_TITLE}
+      APP_PORT: ${APP_PORT}
+      API_KEY: ${API_KEY}
+    ports:
+      - "127.0.0.1:${APP_PORT}:7860"
+    depends_on:
+      - ollama
+      - mariadb
+    networks:
+      - internal_net
+    restart: unless-stopped
+
+networks:
+  internal_net:
+    external: true
+    name: compose_internal_net
