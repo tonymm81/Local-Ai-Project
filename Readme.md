@@ -13,6 +13,9 @@
 ### Version 101
 - I am trying to make reset ai server service, that sometimes ollama keeps generating like endless loop when it try to generate the responce. There is some problems that I need to figure out
 
+### version 102
+- Muutokset testaamatta. ollamaproxy ja siihen kuuluva ndjos parseri päivittämättä ku linuksi taas tilttas
+
 ## Test
 - curl -s -X POST http://127.0.0.1:8080/generate \
   -H "Content-Type: application/json" \
@@ -71,3 +74,7 @@ usr/bin/ollama_watchdog.py
 - ssh -p 9000 -L 5001:127.0.0.1:8080 tonymm81@192.168.68.126 -N
 
 - Ollama 8080 ja resetointipalveli 5001
+
+### desktopapp venv
+
+source venv/Scripts/activate

@@ -1,27 +1,83 @@
-import logging
 import os
-from fastapi import FastAPI, Header, HTTPException
+import logging
+import subprocess
+import time
+from fastapi import FastAPI, Header, HTTPException, status, BackgroundTasks, Request
+from concurrent.futures import ThreadPoolExecutor
+import aiosqlite
 
 app = FastAPI()
 API_KEY = os.environ.get("API_KEY", "")
+RESET_SCRIPT = "/usr/local/bin/reset_agent.sh"
+LOGFILE = "/var/log/reset_agent_http.log"
+DB = "/var/lib/ollama_analytics/analytics.db"
+RESET_COOLDOWN = 600  # seconds
 
-def mask(k: str) -> str:
-    if not k:
-        return "<empty>"
-    return k[:4] + "…" + k[-4:]
+logger = logging.getLogger("reset")
+logging.basicConfig(level=logging.INFO)
 
-def repr_info(k: str) -> str:
-    # näyttää repr ja pituuden
-    return f"repr={repr(k)} len={len(k)}"
+executor = ThreadPoolExecutor(max_workers=2)
+
+def check_api_key(provided: str) -> None:
+    if (provided or "").strip() != API_KEY:
+        logger.warning("Reset forbidden: provided != expected")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+def run_reset_script(timeout=60):
+    # suoritetaan erillisessä säikeessä, ei shell=True
+    try:
+        proc = subprocess.run(['sudo', RESET_SCRIPT], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
+        return proc.returncode, proc.stdout, proc.stderr
+    except subprocess.TimeoutExpired as e:
+        return None, "", f"timeout: {e}"
+    except Exception as e:
+        return None, "", f"exec error: {e}"
+
+async def can_trigger_reset(cooldown_seconds=RESET_COOLDOWN) -> bool:
+    async with aiosqlite.connect(DB) as db:
+        async with db.execute("SELECT ts FROM resets ORDER BY ts DESC LIMIT 1") as cur:
+            row = await cur.fetchone()
+            if not row:
+                return True
+            last = row[0]
+            return (time.time() - last) > cooldown_seconds
+
+async def record_reset(request_id: str, reason: str):
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("INSERT INTO resets(ts, request_id, reason) VALUES(?,?,?)", (time.time(), request_id, reason))
+        await db.commit()
+
+def append_log(text: str):
+    try:
+        with open(LOGFILE, "a") as fh:
+            fh.write(text + "\n")
+    except Exception:
+        logger.exception("Failed to write reset log")
 
 @app.post("/admin/reset")
-def admin_reset(x_api_key: str = Header(None)):
-    logging.info("DEBUG: expected key masked=%s %s", mask(API_KEY), repr_info(API_KEY))
-    logging.info("DEBUG: received key masked=%s %s", mask(x_api_key), repr_info(x_api_key or ""))
-    provided = (x_api_key or "").strip()
-    logging.info("DEBUG: provided after strip repr=%s len=%d", repr(provided), len(provided))
-    if provided != API_KEY:
-        logging.warning("Reset forbidden: provided != expected")
-        raise HTTPException(status_code=403, detail="forbidden")
-    # jatka normaalisti reset-logiikkaan
-    return {"status": "ok"}
+async def admin_reset(request: Request, background_tasks: BackgroundTasks, x_api_key: str = Header(None)):
+    check_api_key(x_api_key)
+    client_ip = request.client.host if request.client else "unknown"
+    request_id = str(int(time.time()*1000))  # yksinkertainen id, voi käyttää uuid
+
+    if not await can_trigger_reset():
+        raise HTTPException(status_code=429, detail="reset cooldown active")
+
+    # kirjaa pyyntö lokiin
+    logger.info("Reset requested id=%s from=%s", request_id, client_ip)
+    append_log(f"{time.time()} RESET requested id={request_id} from={client_ip}")
+
+    # suorita skripti taustalla säikeessä
+    future = executor.submit(run_reset_script, 60)
+
+    def on_done(fut):
+        rc, out, err = fut.result()
+        append_log(f"RESET id={request_id} rc={rc}\nSTDOUT:\n{out}\nSTDERR:\n{err}")
+        # tallenna reset audit
+        import asyncio
+        asyncio.run(record_reset(request_id, "manual"))
+
+    background_tasks.add_task(lambda: future.result())  # varmistaa että future käynnistyy
+    future.add_done_callback(lambda fut: on_done(fut))
+
+    return {"status": "accepted", "request_id": request_id}

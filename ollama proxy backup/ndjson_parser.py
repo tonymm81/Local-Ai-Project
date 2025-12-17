@@ -1,16 +1,15 @@
+# /opt/ollama_proxy/ndjson_parser.py
 import json
 import time
 import aiosqlite
-import asyncio
 from typing import Tuple
 
 DB = "/var/lib/ollama_analytics/analytics.db"
 
 async def ensure_schema():
     async with aiosqlite.connect(DB) as db:
-        await db.execute("PRAGMA journal_mode=WAL;")
-        await db.execute("PRAGMA synchronous=NORMAL;")
-        await db.execute(""" CREATE TABLE IF NOT EXISTS requests(
+        await db.execute("""
+        CREATE TABLE IF NOT EXISTS requests(
             request_id TEXT PRIMARY KEY,
             model TEXT,
             prompt_hash TEXT,
@@ -19,19 +18,13 @@ async def ensure_schema():
             latency_ms INTEGER,
             tokens INTEGER
         )""")
-        await db.execute(""" CREATE TABLE IF NOT EXISTS events_raw(
+        await db.execute("""
+        CREATE TABLE IF NOT EXISTS events_raw(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             request_id TEXT,
             ts REAL,
             raw_line TEXT
         )""")
-        await db.execute(""" CREATE INDEX IF NOT EXISTS idx_events_raw_request_id ON events_raw(request_id) """)
-        await db.execute(""" CREATE TABLE IF NOT EXISTS resets(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ts REAL,
-            request_id TEXT,
-            reason TEXT
-        ) """)
         await db.commit()
 
 async def store_raw_line(request_id: str, raw_line: str):
@@ -51,42 +44,18 @@ async def store_request_summary(request_id: str, model: str, prompt_hash: str, s
         )
         await db.commit()
 
-async def assemble_ndjson_text_and_store(resp, request_id: str, idle_timeout: float = 5.0) -> Tuple[str,int,bool,bool]:
-    """
-    Kokoa NDJSON‑streamista tekstiä ja tallenna rivit DB:hen.
-    Palauttaa: (full_text, tokens, done_flag, idle_timed_out_flag)
-    idle_timeout = sekunteina; jos ei tule uutta chunkia tämän ajan, funktio lopettaa.
-    """
+async def assemble_ndjson_text_and_store(resp, request_id: str) -> Tuple[str,int,bool]:
     parts = []
     tokens = 0
     done = False
-    idle_timed_out = False
-
-    ait = resp.aiter_text()
-
-    while True:
-        try:
-            # odota seuraavaa chunkia, mutta aikakatkaise jos ei tule
-            raw = await asyncio.wait_for(ait.__anext__(), timeout=idle_timeout)
-        except asyncio.TimeoutError:
-            # ei tullut uutta dataa määritettyyn aikaan -> tappokytkin laukeaa
-            idle_timed_out = True
-            break
-        except StopAsyncIteration:
-            # stream päättyi normaalisti
-            break
+    async for raw in resp.aiter_text():
         if not raw:
             continue
         for line in raw.splitlines():
             line = line.strip()
             if not line:
                 continue
-            # tallenna raakarivi
-            try:
-                await store_raw_line(request_id, line)
-            except Exception:
-                # älä kaada koko prosessia DB‑virheestä; jatka
-                pass
+            await store_raw_line(request_id, line)
             try:
                 obj = json.loads(line)
             except Exception:
@@ -98,6 +67,5 @@ async def assemble_ndjson_text_and_store(resp, request_id: str, idle_timeout: fl
                 tokens += len(obj["response"].split())
             if obj.get("done") is True:
                 done = True
-
     full = "".join(parts)
-    return full, tokens, done, idle_timed_out
+    return full, tokens, done
