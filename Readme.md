@@ -14,7 +14,7 @@
 - I am trying to make reset ai server service, that sometimes ollama keeps generating like endless loop when it try to generate the responce. There is some problems that I need to figure out
 
 ### version 102
-- Muutokset testaamatta. ollamaproxy ja siihen kuuluva ndjos parseri päivittämättä ku linuksi taas tilttas
+- Buildin the desktopapp, where I can communicate to ollama. I also add some text format to tkinter app. But I have issue. Sometimes olamas answer generating is freezing the linux server, so I have to figure out, what is causing this? The broken linux system files of gpu driver?
 
 ## Test
 - curl -s -X POST http://127.0.0.1:8080/generate \
@@ -75,6 +75,14 @@ usr/bin/ollama_watchdog.py
 
 - Ollama 8080 ja resetointipalveli 5001
 
-### desktopapp venv
+## Python venv
 
-source venv/Scripts/activate
+- python -m venv .venv
+
+- source .venv/Scripts/activate
+
+- python -m pip install requests
+
+- ./.venv/Scripts/python.exe app.py
+
+

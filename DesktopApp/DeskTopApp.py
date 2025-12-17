@@ -52,4 +52,8 @@ send_button.pack(pady=5)
 result_text = tk.Text(root, width=80, height=20)
 result_text.pack(pady=10)
 
+<<<<<<< HEAD
 root.mainloop()
+=======
+root.mainloop()
+>>>>>>> main
