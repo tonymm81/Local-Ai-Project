@@ -16,6 +16,18 @@
 ### version 102
 - Buildin the desktopapp, where I can communicate to ollama. I also add some text format to tkinter app. But I have issue. Sometimes olamas answer generating is freezing the linux server, so I have to figure out, what is causing this? The broken linux system files of gpu driver?
 
+
+### version 103
+- I have now developed the client app, that it shows the analytics with every responce. I have also developed the server side programs ollama_proxy_main and Ollama_proxy_ndjson_parser.py to return the analytics data.
+
+- app is now working fine and agent responce is showing in Desktopapp, what is different machine.
+
+#### bug
+- the cancelbutton does not do anything, so I think that admin_reset.py has some issues but I need to check the logs, before contiuing troubleshooting.
+
+#### plan
+- Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt
+
 ## Test
 - curl -s -X POST http://127.0.0.1:8080/generate \
   -H "Content-Type: application/json" \
@@ -86,3 +98,7 @@ usr/bin/ollama_watchdog.py
 - ./.venv/Scripts/python.exe app.py
 
 
+### reset proxy server
+
+- sudo cp -f main.py /opt/ollama_proxy/main.py sudo cp -f ndjson_parser.py /opt/ollama_proxy/ndjson_parser.py
+-sudo systemctl restart ollama-proxy sudo journalctl -u ollama-proxy -f

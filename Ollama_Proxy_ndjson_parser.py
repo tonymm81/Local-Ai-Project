@@ -99,5 +99,6 @@ async def assemble_ndjson_text_and_store(resp, request_id: str, idle_timeout: fl
             if obj.get("done") is True:
                 done = True
 
-    full = "".join(parts)
+    clean_parts = [p.strip() for p in parts if p and p.strip()] 
+    full = " ".join(clean_parts) # käyttää välilyöntiä, estää sanojen rivittymisen
     return full, tokens, done, idle_timed_out
