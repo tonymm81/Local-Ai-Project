@@ -9,7 +9,7 @@ CPU_THRESHOLD = 85.0   # %
 MEM_THRESHOLD_MB = 7000  # MB
 CHECK_INTERVAL = 10
 LOGFILE = "/var/log/ollama_watchdog.log"
-WEBHOOK = None  # "https://hooks.example.com/..." tai None
+WEBHOOK = None  # "https://hooks.example.com/..." tai None tän vois kattoo, saisko sen postaamaa ihan asiakas appii
 
 client = docker.from_env()
 

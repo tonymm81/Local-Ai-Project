@@ -26,7 +26,9 @@
 - the cancelbutton does not do anything, so I think that admin_reset.py has some issues but I need to check the logs, before contiuing troubleshooting.
 
 #### plan
-- Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt
+- Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt.
+
+- Also watchdog.py we should consider, that how we get alarm to client app from this.
 
 ## Test
 - curl -s -X POST http://127.0.0.1:8080/generate \

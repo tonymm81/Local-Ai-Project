@@ -79,7 +79,7 @@ def send_prompt():
 
     threading.Thread(target=task, daemon=True).start()
 
-def upload_file():
+def upload_file():# thi has to plan. I dont know, if ollama takes files from requests. If not, then just unzip file content to prompt field
     filepath = filedialog.askopenfilename()
     if not filepath:
         return
