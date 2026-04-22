@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 import os
 
-PROXY_URL = "http://192.168.68.126:8080"  # säädä omaan proxyysi
+PROXY_URL = "http://192.168.68.204:8080"  # säädä omaan proxyysi
 API_URL = os.getenv("API_URL", "http://127.0.0.1:5001/admin/reset") 
 API_KEY = os.getenv("API_KEY", "") # tyhjä jos ei asetettu
 

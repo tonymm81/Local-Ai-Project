@@ -20,7 +20,19 @@
 ### version 103
 - I have now developed the client app, that it shows the analytics with every responce. I have also developed the server side programs ollama_proxy_main and Ollama_proxy_ndjson_parser.py to return the analytics data.
 
-- app is now working fine and agent responce is showing in Desktopapp, what is different machine.
+- app is now working fine and agent responce is showing in Desktopapp, what is different machine. 
+
+
+### version 104 (adding dev agent)
+- I add more disk to computer and it is purpose to use same proxy server with 2 other agents. No I am building the dev agent on ai-aget2 disk. Docker container is up now.
+- This agent gets it own database sqlite in agetnt2 disk. This agent is using the same analytics database, that ollama uses.
+
+- This project, I add DevAgent folder, where is this agent files.
+
+### version 105
+- Adding agent qwen to this project also. Then we have tree different agent so we have some data, what compare.
+
+#### jäätii kohtaa 3 eli seuraavaa kyssäriä
 
 #### bug
 - the cancelbutton does not do anything, so I think that admin_reset.py has some issues but I need to check the logs, before contiuing troubleshooting.
@@ -97,7 +109,7 @@ usr/bin/ollama_watchdog.py
 
 - python -m pip install requests
 
-- ./.venv/Scripts/python.exe app.py
+- ./.venv/Scripts/python.exe DeskTopApp.py
 
 
 ### reset proxy server
