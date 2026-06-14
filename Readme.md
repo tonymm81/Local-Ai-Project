@@ -33,8 +33,12 @@
 - Adding agent qwen to this project also. Then we have tree different agent so we have some data, what compare.
 - ollama agent qwen is workin now so next step is start to build the communication route all the way to client app
 
+### version 106
 
-#### jäätii kohtaa 3 eli seuraavaa kyssäriä
+- updating the linux components to use 3 different ai agent models. 
+- Updating the reset_agent.sh file
+- updating the admin_reset.py file logic also.
+
 
 #### bug
 - the cancelbutton does not do anything, so I think that admin_reset.py has some issues but I need to check the logs, before contiuing troubleshooting.
@@ -119,3 +123,6 @@ usr/bin/ollama_watchdog.py
 
 - sudo cp -f main.py /opt/ollama_proxy/main.py sudo cp -f ndjson_parser.py /opt/ollama_proxy/ndjson_parser.py
 -sudo systemctl restart ollama-proxy sudo journalctl -u ollama-proxy -f
+
+### reset all docker containers
+- sudo /usr/local/bin/reset_agent.sh

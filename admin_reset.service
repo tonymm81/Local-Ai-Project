@@ -1,8 +1,10 @@
 [Unit]
+
 Description=Admin Reset API service
 After=network.target
 
 [Service]
+ReadWritePaths=/opt/admin_reset
 Type=simple
 User=tonymm81
 Group=tonymm81
