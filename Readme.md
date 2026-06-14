@@ -31,6 +31,8 @@
 
 ### version 105
 - Adding agent qwen to this project also. Then we have tree different agent so we have some data, what compare.
+- ollama agent qwen is workin now so next step is start to build the communication route all the way to client app
+
 
 #### jäätii kohtaa 3 eli seuraavaa kyssäriä
 
@@ -49,6 +51,7 @@
 
 ### Ssh connection test postman
 
+##pixtrail test
 - http://127.0.0.1:9000/generate and 
 {
   "model": "pixtral-12b-q2:latest",

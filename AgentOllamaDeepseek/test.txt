@@ -1,0 +1,6 @@
+- http://127.0.0.1:9000/generate and 
+{
+  "model": "pixtral-12b-q2:latest",
+  "prompt": "test",
+  "max_tokens": 32
+}

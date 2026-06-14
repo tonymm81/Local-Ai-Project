@@ -1,0 +1,3 @@
+curl http://localhost:11437/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"model":"phi_2_gguf:latest","prompt":"testi"}'

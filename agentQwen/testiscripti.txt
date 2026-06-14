@@ -1,0 +1,7 @@
+curl -v -X POST http://localhost:11439/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"testi", "model":"qwen"}'
+
+sudo docker logs --tail 200 ollama-qwen
+
+ curl http://localhost:11440/generate -H "Content-Type: application/json" -d '{"prompt":"how are you?"}'
