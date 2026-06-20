@@ -1,0 +1,14 @@
+## reset admin
+/usr/local/bin/reset_agent.sh
+curl -X POST http://127.0.0.1:5001/admin/reset \
+  -H "x-api-key: <sun_api_key>"
+
+## Logeja
+LOGFILE = "/opt/admin_reset/reset_agent_http.log"
+
+sudo tail -n 50 /opt/admin_reset/reset_agent_http.log
+sudo journalctl -u admin_reset.service -n 50 --no-pager
+sudo journalctl -u ollama-proxy.service -n 50 --no-pager
+
+## admin_reset
+/Opt/admin_reset

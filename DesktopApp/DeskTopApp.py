@@ -9,7 +9,7 @@ from datetime import datetime
 import os
 
 PROXY_URL = "http://192.168.68.204:8080"  # säädä omaan proxyysi
-API_URL = os.getenv("API_URL", "http://127.0.0.1:5001/admin/reset") 
+API_URL = os.getenv("API_URL", "//192.168.68.204:5001/admin/reset") 
 API_KEY = os.getenv("API_KEY", "") # tyhjä jos ei asetettu
 
 # Värit ja fontit tummaan teemaan
@@ -31,7 +31,7 @@ def run_cancel():
         analytics_text.after(0, lambda: update_analytics_text("No API key set in environment or prompt entry.")) 
         return # Estä nappia painamasta useasti (UI feedback) 
     
-    cancel_button.config(state="disabled") 
+    cancel_button.config(state="enabled") 
     analytics_text.after(0, lambda: update_analytics_text("Sending reset request..."))
 
 def send_prompt():

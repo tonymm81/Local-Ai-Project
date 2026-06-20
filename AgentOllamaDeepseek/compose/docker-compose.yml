@@ -4,6 +4,7 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
+    gpus: all
     ports:
       - "11435:11434"
     environment:
@@ -25,6 +26,8 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - ../mariadb_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
     networks:
       - internal_net
     restart: unless-stopped

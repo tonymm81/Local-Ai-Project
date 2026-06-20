@@ -1,3 +1,5 @@
-curl http://localhost:11437/api/generate \
+
+
+  curl -v --max-time 300 http://localhost:11436/api/generate \
   -H "Content-Type: application/json" \
-  -d '{"model":"phi_2_gguf:latest","prompt":"testi"}'
+  -d '{"model":"phi_2_gguf:latest","prompt":"testi","stream":false}'

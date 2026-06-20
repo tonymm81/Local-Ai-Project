@@ -39,6 +39,14 @@
 - Updating the reset_agent.sh file
 - updating the admin_reset.py file logic also.
 
+- Now the admin_reset.py is working as excepted. It reset all the containers and also proxyserver. nest step is to create the routing to post messages from cielnt to ai agent.
+
+- I change the file database to mariadb and it starts to work. When I was testing pixatrail agent, I noticed, that It uses the CPU for generating the answer instead of GPU so I need to give permission to docker container to use gpu in container.
+
+- I noticed, that ollama dev agent does not have own container so it is now updated and agent answers to test curl. 
+- Next this is to update ollama-qwen docker-compose.yml file to support GPU using in answer generating.
+
+- And new issue agai and again and again. Proxyserver gives a sql error and nothing helps to it.
 
 #### bug
 - the cancelbutton does not do anything, so I think that admin_reset.py has some issues but I need to check the logs, before contiuing troubleshooting.

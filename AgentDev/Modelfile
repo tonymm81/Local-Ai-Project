@@ -1,0 +1,5 @@
+name: phi_2_gguf
+format: gguf
+files:
+  - model.gguf
+description: "Phi 2 gguf local import"

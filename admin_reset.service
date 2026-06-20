@@ -16,10 +16,7 @@ Restart=on-failure
 RestartSec=5
 LimitNOFILE=65536
 # Security hardening
-PrivateTmp=true
-NoNewPrivileges=true
-ProtectSystem=full
-ProtectHome=true
+
 
 [Install]
 WantedBy=multi-user.target

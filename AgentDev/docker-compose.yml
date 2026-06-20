@@ -1,0 +1,35 @@
+services:
+  ollama-local:
+    image: ollama/ollama:latest
+    container_name: ollama-local
+    gpus: all
+    ports:
+      - "11436:11434"   # host 11436 -> container 11434, ei koske olemassa olevia 11435/11439/11440
+    volumes:
+      - /data/ai-agent2/ollama:/root/.ollama   # oma malli‑hakemisto
+    networks:
+      - ollama-local-net
+    restart: unless-stopped
+
+  ollama-dev:
+    build:
+      context: /data/ai-agent2
+      dockerfile: Dockerfile
+    container_name: ollama-dev-local
+    gpus: all
+    ports:
+      - "7861:8000"
+    volumes:
+      - /data/ai-agent2/app:/app
+      - /data/ai-agent2/data/agent.db:/data/agent.db
+      - /data/ai-agent2/ollama/models:/root/.ollama/models
+    environment:
+      - SQLITE_PATH=/data/agent.db
+      - OLLAMA_URL=http://ollama-local:11434
+    networks:
+      - ollama-local-net
+    restart: unless-stopped
+
+networks:
+  ollama-local-net:
+    driver: bridge
