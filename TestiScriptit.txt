@@ -12,3 +12,17 @@ sudo journalctl -u ollama-proxy.service -n 50 --no-pager
 
 ## admin_reset
 /Opt/admin_reset
+
+sudo journalctl -u ollama-proxy.service -n 200 --no-pager
+# proxy main log
+sudo tail -n 200 /opt/ollama_proxy/proxy_main.log
+sudo tail -f /opt/ollama_proxy/proxy_main.log
+
+# ndjson parser log
+sudo tail -n 200 /opt/ollama_proxy/ndJsonParser.log
+sudo tail -f /opt/ollama_proxy/ndJsonParser.log
+
+# proxy serverin testi
+curl -v -X POST http://127.0.0.1:8080/generate \
+  -H "Content-Type: application/json" \
+  -d '{"agent":"ollama-dev","model":"phi_2_gguf:latest","prompt":"testi"}'

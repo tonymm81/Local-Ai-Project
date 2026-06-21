@@ -24,7 +24,7 @@ async def generate(req: GenReq):
     payload = {
         "model": req.model,
         "prompt": req.prompt,
-        "stream": False
+        "stream": True
     }
 
     try:

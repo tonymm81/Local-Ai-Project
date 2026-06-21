@@ -8,9 +8,16 @@ import json
 from datetime import datetime
 import os
 
-PROXY_URL = "http://192.168.68.204:8080"  # säädä omaan proxyysi
+PROXY = "http://192.168.68.204:8080"
 API_URL = os.getenv("API_URL", "//192.168.68.204:5001/admin/reset") 
 API_KEY = os.getenv("API_KEY", "") # tyhjä jos ei asetettu
+
+AGENT_DEFAULT_MODEL = {
+    "pixatrail": "pixtral-12b-q2:latest",
+    "ollama-dev": "phi_2_gguf:latest",
+    "ollama-qwen": "qwen2.5:7b"
+}
+AGENTS = list(AGENT_DEFAULT_MODEL.keys())
 
 # Värit ja fontit tummaan teemaan
 BG = "#0f1115"
@@ -22,7 +29,18 @@ ACCENT = "#4fb0ff"
 FONT_FAMILY = "Segoe UI"  # vaihda tarvittaessa
 FONT_SIZE = 11
 
-
+def build_payload(selected_agent: str, selected_model: str | None, prompt: str):
+    # jos käyttäjä valitsi mallin, käytä sitä; muuten ota agentin oletus
+    model = selected_model if selected_model else AGENT_DEFAULT_MODEL.get(selected_agent)
+    if not model:
+        raise ValueError(f"No model available for agent '{selected_agent}'")
+    return {
+        "agent": selected_agent,
+        "model": model,
+        "prompt": prompt,
+        "max_tokens": 512,
+        "temperature": 0.0
+    }
 
 def run_cancel():
 # Hae avain: ympäristöstä ensisijaisesti, muuten UI:sta (jos lisäät kentän) 
@@ -36,33 +54,44 @@ def run_cancel():
 
 def send_prompt():
     user_prompt = prompt_entry.get().strip()
+    agent = selected_agent.get() or "pixatrail"
     if not user_prompt:
         update_result("Please enter a prompt.")
         return
 
-    payload = {
-        "model": "pixtral-12b-q2:latest",
-        "prompt": user_prompt,
-        "max_tokens": 512,
-        "temperature": 0.0
-    }
+    # Jos haluat lisätä UI:hin mallivalinnan, voit asettaa selected_model muuttujan.
+    selected_model = None
+
+    try:
+        payload = build_payload(agent, selected_model, user_prompt)
+    except Exception as e:
+        update_result(f"Payload build failed: {e}")
+        return
 
     update_result("Waiting for response...")
     update_analytics_text("Fetching analytics...")
 
     def task():
         try:
-            resp = requests.post(f"{PROXY_URL}/generate", json=payload, timeout=620)
-            resp.raise_for_status()
+            print("OUTGOING PAYLOAD:", json.dumps(payload, ensure_ascii=False))
+            resp = requests.post(f"{PROXY}/generate", json=payload, timeout=620)
+            print("RESPONSE STATUS:", resp.status_code)
+            print("RESPONSE BODY:", resp.text)
+            # Näytä body debugiksi ennen raisea
+            if resp.status_code >= 400:
+                result_text.after(0, lambda: update_result(f"Request failed: {resp.status_code}\n\n{resp.text}"))
+                analytics_text.after(0, lambda: update_analytics_text("No analytics available (request failed)"))
+                return
+
             data = resp.json()
             text = data.get("text", "")
             result_text.after(0, lambda: update_result(text))
 
             req_id = data.get("request_id")
             if req_id:
-                # Hae yksittäisen requestin analytiikkaa
+# Hae yksittäisen requestin analytiikkaa
                 try:
-                    stats_resp = requests.get(f"{PROXY_URL}/requests/{req_id}", timeout=10)
+                    stats_resp = requests.get(f"{PROXY}/requests/{req_id}", timeout=10)
                     if stats_resp.status_code == 200:
                         stats_data = stats_resp.json()
                         analytics_text.after(0, lambda: update_analytics_from_request(stats_data))
@@ -78,6 +107,8 @@ def send_prompt():
             analytics_text.after(0, lambda: update_analytics_text("No analytics available (request failed)"))
 
     threading.Thread(target=task, daemon=True).start()
+
+    
 
 def upload_file():# thi has to plan. I dont know, if ollama takes files from requests. If not, then just unzip file content to prompt field
     filepath = filedialog.askopenfilename()
@@ -221,6 +252,10 @@ def update_analytics_from_request(data):
     if reconstructed_text:
         result_text.after(0, lambda: update_result(reconstructed_text))
 
+
+#AGENTS = ["pixatrail", "ollama-dev", "ollama-qwen"]
+selected_agent = None  # alustetaan myöhemmin
+
 # GUI setup
 root = tk.Tk()
 root.title("Agent Prompt App")
@@ -230,6 +265,8 @@ root.configure(bg=BG)
 root.columnconfigure(0, weight=1)
 root.rowconfigure(3, weight=1)
 root.rowconfigure(4, weight=1)
+
+selected_agent = tk.StringVar(master=root, value="pixatrail")
 
 # Fontit
 base_font = font.Font(family=FONT_FAMILY, size=FONT_SIZE)
@@ -274,6 +311,11 @@ analytics_text.config(state="disabled")
 
 cancel_button = tk.Button(button_frame, text="Cancel / Run reset", command=lambda: run_cancel(), bg="#b03a3a", fg="#fff", font=base_font, activebackground="#d04a4a") 
 cancel_button.pack(side="left", padx=(8,0))
+
+tk.Label(button_frame, text="Agent:", bg=BG, fg=MUTED, font=base_font).pack(side="left", padx=(12,0))
+for a in AGENTS:
+    tk.Radiobutton(button_frame, text=a, variable=selected_agent, value=a,
+                   bg=BG, fg=FG, selectcolor=PANEL, font=base_font).pack(side="left", padx=6)
 
 # Aloitusviesti
 update_result("Ready. Enter a prompt or upload a file.")

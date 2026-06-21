@@ -48,13 +48,23 @@
 
 - And new issue agai and again and again. Proxyserver gives a sql error and nothing helps to it.
 
+### version 107
+
+- Added to client app radio buttons, where user can select, what agent is answering to prompt.
+- Added the routes to server in ollama-proxy-server.py and nd_json_parser.py
+- Ui updated. Now the agents are responding to python app in client computer. 
+- Lets merge the branch for this version
+
 #### bug
 - the cancelbutton does not do anything, so I think that admin_reset.py has some issues but I need to check the logs, before contiuing troubleshooting.
 
-#### plan
+#### plan 01
 - Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt.
 
 - Also watchdog.py we should consider, that how we get alarm to client app from this.
+
+#### plan 02
+- Lets build a feature, that you can see the chat history in client app also.
 
 ## Test
 - curl -s -X POST http://127.0.0.1:8080/generate \

@@ -47,7 +47,8 @@ async def ensure_schema():
                 start_ts DOUBLE,
                 end_ts DOUBLE,
                 latency_ms INT,
-                tokens INT
+                tokens INT,
+                agent VARCHAR(64)
             )
         """)
 
@@ -88,36 +89,42 @@ async def ensure_schema():
 
 async def store_raw_line(request_id: str, raw_line: str):
     try:
-        latency_ms = int((end_ts - start_ts) * 1000)
         conn = await get_conn()
         cur = await conn.cursor()
-        ...
+        await cur.execute(
+            "INSERT INTO events_raw(request_id, ts, raw_line) VALUES(%s, %s, %s)",
+            (request_id, time.time(), raw_line)
+        )
+        await cur.close()
+        conn.close()
+    except Exception as e:
+        logger.error(f"store_raw_line() failed for {request_id}: {e}")
+
+async def store_request_summary(request_id: str, model: str, prompt_hash: str, start_ts: float, end_ts: float, tokens: int, agent: str = None):
+    try:
+        latency_ms = int((end_ts - start_ts) * 1000) if (start_ts is not None and end_ts is not None) else None
+        conn = await get_conn()
+        cur = await conn.cursor()
+        await cur.execute(
+            """INSERT INTO requests(request_id, model, prompt_hash, start_ts, end_ts, latency_ms, tokens, agent)
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
+               ON DUPLICATE KEY UPDATE
+                 model=VALUES(model),
+                 prompt_hash=VALUES(prompt_hash),
+                 start_ts=VALUES(start_ts),
+                 end_ts=VALUES(end_ts),
+                 latency_ms=VALUES(latency_ms),
+                 tokens=VALUES(tokens),
+                 agent=VALUES(agent)
+            """,
+            (request_id, model, prompt_hash, start_ts, end_ts, latency_ms, tokens, agent)
+        )
         await cur.close()
         conn.close()
     except Exception as e:
         logger.error(f"store_request_summary() failed for {request_id}: {e}")
 
-async def store_request_summary(request_id: str, model: str, prompt_hash: str, start_ts: float, end_ts: float, tokens: int):
-    latency_ms = int((end_ts - start_ts) * 1000)
-    conn = await get_conn()
-    cur = await conn.cursor()
-    await cur.execute(
-        """INSERT INTO requests(request_id, model, prompt_hash, start_ts, end_ts, latency_ms, tokens)
-           VALUES(%s,%s,%s,%s,%s,%s,%s)
-           ON DUPLICATE KEY UPDATE
-             model=VALUES(model),
-             prompt_hash=VALUES(prompt_hash),
-             start_ts=VALUES(start_ts),
-             end_ts=VALUES(end_ts),
-             latency_ms=VALUES(latency_ms),
-             tokens=VALUES(tokens)
-        """,
-        (request_id, model, prompt_hash, start_ts, end_ts, latency_ms, tokens)
-    )
-    await cur.close()
-    conn.close()
-
-async def assemble_ndjson_text_and_store(resp, request_id: str, idle_timeout: float = 5.0) -> Tuple[str,int,bool,bool]:
+async def assemble_ndjson_text_and_store(resp, request_id: str, idle_timeout: float = 5.0, agent: str = None) -> Tuple[str,int,bool,bool]:
     parts = []
     tokens = 0
     done = False
@@ -125,6 +132,8 @@ async def assemble_ndjson_text_and_store(resp, request_id: str, idle_timeout: fl
 
     ait = resp.aiter_text()
 
+    # Luetaan streamiä; jos upstream ei streamaa ndjson:ia vaan palauttaa yhden JSON-objektin, käsitellään se
+    buffer = ""
     while True:
         try:
             raw = await asyncio.wait_for(ait.__anext__(), timeout=idle_timeout)
@@ -137,29 +146,60 @@ async def assemble_ndjson_text_and_store(resp, request_id: str, idle_timeout: fl
         if not raw:
             continue
 
+        buffer += raw
         for line in raw.splitlines():
             line = line.strip()
             if not line:
                 continue
 
+            # Tallenna raaka rivi
             try:
                 await store_raw_line(request_id, line)
             except Exception:
                 pass
 
+            # Yritä parsia JSON-rivi
             try:
                 obj = json.loads(line)
             except Exception:
+                # Ei JSON-riviä, lisää suoraan
                 parts.append(line)
                 tokens += len(line.split())
                 continue
+            # Jos obj on dict ja sisältää response tai text
+            if isinstance(obj, dict):
+                resp_fragment = obj.get("response") or obj.get("text") or ""
+                if isinstance(resp_fragment, str) and resp_fragment:
+                    parts.append(resp_fragment)
+                    tokens += len(resp_fragment.split())
+                if obj.get("done") is True:
+                    done = True
+            else:
+                # jos obj ei ole dict, lisää sen stringinä
+                s = json.dumps(obj)
+                parts.append(s)
+                tokens += len(s.split())
 
-            if isinstance(obj.get("response"), str):
-                parts.append(obj["response"])
-                tokens += len(obj["response"].split())
-
-            if obj.get("done") is True:
-                done = True
+    # Jos buffer sisältää yhden JSON-objektin (ei ndjson stream), yritä parsia koko buffer
+    if not parts and buffer:
+        try:
+            whole = json.loads(buffer)
+            if isinstance(whole, dict):
+                resp_fragment = whole.get("response") or whole.get("text") or ""
+                if resp_fragment:
+                    parts.append(resp_fragment)
+                    tokens += len(resp_fragment.split())
+                if whole.get("done") is True:
+                    done = True
+                # tallenna koko raw buffer
+                try:
+                    await store_raw_line(request_id, buffer)
+                except Exception:
+                    pass
+        except Exception:
+            # ei JSON, jätä bufferin teksti osaksi parts
+            parts.append(buffer)
+            tokens += len(buffer.split())
 
     clean_parts = [p.strip() for p in parts if p and p.strip()]
     full = " ".join(clean_parts)

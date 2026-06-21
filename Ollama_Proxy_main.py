@@ -24,12 +24,27 @@ handler.setFormatter(formatter)
 if not logger.handlers:
     logger.addHandler(handler)
 
+AGENT_URLS = {
+    "pixatrail": os.getenv("OLLAMA_PIXATRAIL_URL", "http://127.0.0.1:11435/api/generate"),
+    "ollama-dev": os.getenv("OLLAMA_DEV_URL", "http://127.0.0.1:11436/api/generate"),
+    "ollama-qwen": os.getenv("OLLAMA_QWEN_URL", "http://127.0.0.1:11440/generate")
+}
+
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11435/api/generate")
+
+def resolve_upstream(agent_name: str):
+    if not agent_name:
+        return OLLAMA_URL
+    if agent_name not in AGENT_URLS:
+        raise HTTPException(status_code=400, detail="Unknown agent")
+    return AGENT_URLS[agent_name]
+
 
 DB = {
     "host": "127.0.0.1",
     "port": 3306,
     "user": "proxy",
-    "password": "xxxx",
+    "password": "xxxxx",
     "db": "ollama_proxy",
     "autocommit": True
 }
@@ -37,7 +52,7 @@ DB = {
 async def get_conn():
     return await aiomysql.connect(**DB)
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11435/api/generate")
+
 IDLE_TIMEOUT = float(os.getenv("OLLAMA_IDLE_TIMEOUT", "5"))
 
 app = FastAPI(title="Ollama Proxy Collector")
@@ -49,6 +64,8 @@ async def startup():
 @app.post("/generate")
 async def generate(request: Request):
     body = await request.json()
+    agent = body.get("agent")
+    upstream = resolve_upstream(agent)
     req_id = str(uuid.uuid4())
     model = body.get("model", "unknown")
     prompt = body.get("prompt", "")
@@ -58,39 +75,37 @@ async def generate(request: Request):
     tokens = 0
     done = False
     idle_timed_out = False
-
     upstream_status = None
+
     async with httpx.AsyncClient(timeout=None) as client:
         try:
-            async with client.stream("POST", OLLAMA_URL, json=body) as resp:
+            async with client.stream("POST", upstream, json=body) as resp:
                 upstream_status = resp.status_code
                 if resp.status_code >= 400:
                     _ = await resp.aread()
                     raise HTTPException(status_code=502, detail=f"Upstream error: {resp.status_code}")
 
                 full, tokens, done, idle_timed_out = await assemble_ndjson_text_and_store(
-                    resp, req_id, idle_timeout=IDLE_TIMEOUT
+                    resp, req_id, idle_timeout=IDLE_TIMEOUT, agent=agent
                 )
         except httpx.RequestError as e:
-            logger.error(f"Upstream returned {resp.status_code} for {req_id}")
+            logger.error(f"Upstream request failed for {req_id}: {e}")
             raise HTTPException(status_code=502, detail=f"Upstream request failed: {str(e)}")
-            
 
     end = time.time()
 
-    await store_request_summary(req_id, model, prompt_hash, start, end, tokens)
-
-    prompt_preview = (prompt[:500] + "...") if len(prompt) > 500 else prompt
+    await store_request_summary(req_id, model, prompt_hash, start, end, tokens, agent=agent)
 
     result = {
         "request_id": req_id,
         "model": model,
+        "agent": agent,
         "tokens": tokens,
         "latency_ms": int((end - start) * 1000),
         "text": full,
         "done": bool(done),
         "idle_timed_out": bool(idle_timed_out),
-        "prompt_preview": prompt_preview,
+        "prompt_preview": (prompt[:500] + "...") if len(prompt) > 500 else prompt,
         "upstream_status": upstream_status
     }
 
