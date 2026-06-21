@@ -1,0 +1,22 @@
+[Unit]
+
+Description=Admin Reset API service
+After=network.target
+
+[Service]
+ReadWritePaths=/opt/admin_reset
+Type=simple
+User=tonymm81
+Group=tonymm81
+WorkingDirectory=/opt/admin_reset
+EnvironmentFile=/etc/admin_reset.env
+# Jos käytät virtualenvin uvicornia, korvaa polku vastaavasti
+ExecStart=/opt/admin_reset/.venv/bin/python -m uvicorn admin_reset:app --host 127.0.0.1 --port 5001 --workers 1 --log-level info
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+# Security hardening
+
+
+[Install]
+WantedBy=multi-user.target

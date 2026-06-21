@@ -16,6 +16,56 @@
 ### version 102
 - Buildin the desktopapp, where I can communicate to ollama. I also add some text format to tkinter app. But I have issue. Sometimes olamas answer generating is freezing the linux server, so I have to figure out, what is causing this? The broken linux system files of gpu driver?
 
+
+### version 103
+- I have now developed the client app, that it shows the analytics with every responce. I have also developed the server side programs ollama_proxy_main and Ollama_proxy_ndjson_parser.py to return the analytics data.
+
+- app is now working fine and agent responce is showing in Desktopapp, what is different machine. 
+
+
+### version 104 (adding dev agent)
+- I add more disk to computer and it is purpose to use same proxy server with 2 other agents. No I am building the dev agent on ai-aget2 disk. Docker container is up now.
+- This agent gets it own database sqlite in agetnt2 disk. This agent is using the same analytics database, that ollama uses.
+
+- This project, I add DevAgent folder, where is this agent files.
+
+### version 105
+- Adding agent qwen to this project also. Then we have tree different agent so we have some data, what compare.
+- ollama agent qwen is workin now so next step is start to build the communication route all the way to client app
+
+### version 106
+
+- updating the linux components to use 3 different ai agent models. 
+- Updating the reset_agent.sh file
+- updating the admin_reset.py file logic also.
+
+- Now the admin_reset.py is working as excepted. It reset all the containers and also proxyserver. nest step is to create the routing to post messages from cielnt to ai agent.
+
+- I change the file database to mariadb and it starts to work. When I was testing pixatrail agent, I noticed, that It uses the CPU for generating the answer instead of GPU so I need to give permission to docker container to use gpu in container.
+
+- I noticed, that ollama dev agent does not have own container so it is now updated and agent answers to test curl. 
+- Next this is to update ollama-qwen docker-compose.yml file to support GPU using in answer generating.
+
+- And new issue agai and again and again. Proxyserver gives a sql error and nothing helps to it.
+
+### version 107
+
+- Added to client app radio buttons, where user can select, what agent is answering to prompt.
+- Added the routes to server in ollama-proxy-server.py and nd_json_parser.py
+- Ui updated. Now the agents are responding to python app in client computer. 
+- Lets merge the branch for this version
+
+#### bug
+- the cancelbutton does not do anything, so I think that admin_reset.py has some issues but I need to check the logs, before contiuing troubleshooting.
+
+#### plan 01
+- Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt.
+
+- Also watchdog.py we should consider, that how we get alarm to client app from this.
+
+#### plan 02
+- Lets build a feature, that you can see the chat history in client app also.
+
 ## Test
 - curl -s -X POST http://127.0.0.1:8080/generate \
   -H "Content-Type: application/json" \
@@ -23,6 +73,7 @@
 
 ### Ssh connection test postman
 
+##pixtrail test
 - http://127.0.0.1:9000/generate and 
 {
   "model": "pixtral-12b-q2:latest",
@@ -83,6 +134,13 @@ usr/bin/ollama_watchdog.py
 
 - python -m pip install requests
 
-- ./.venv/Scripts/python.exe app.py
+- ./.venv/Scripts/python.exe DeskTopApp.py
 
 
+### reset proxy server
+
+- sudo cp -f main.py /opt/ollama_proxy/main.py sudo cp -f ndjson_parser.py /opt/ollama_proxy/ndjson_parser.py
+-sudo systemctl restart ollama-proxy sudo journalctl -u ollama-proxy -f
+
+### reset all docker containers
+- sudo /usr/local/bin/reset_agent.sh
