@@ -9,8 +9,8 @@ from datetime import datetime
 import os
 
 PROXY = "http://192.168.68.204:8080"
-API_URL = os.getenv("API_URL", "//192.168.68.204:5001/admin/reset") 
-API_KEY = os.getenv("API_KEY", "") # tyhjä jos ei asetettu
+API_URL = os.getenv("API_URL", "http://192.168.68.204:5001/admin/reset")
+API_KEY = os.getenv("API_KEY", "ThisIsThePassw0rd!") # tyhjä jos ei asetettu
 
 AGENT_DEFAULT_MODEL = {
     "pixatrail": "pixtral-12b-q2:latest",
@@ -43,13 +43,31 @@ def build_payload(selected_agent: str, selected_model: str | None, prompt: str):
     }
 
 def run_cancel():
-# Hae avain: ympäristöstä ensisijaisesti, muuten UI:sta (jos lisäät kentän) 
-    key = API_KEY or prompt_entry.get().strip() # käytä prompt_entryä fallbackina tai luo erillinen kenttä 
-    if not key: 
-        analytics_text.after(0, lambda: update_analytics_text("No API key set in environment or prompt entry.")) 
-        return # Estä nappia painamasta useasti (UI feedback) 
+    key = API_KEY or prompt_entry.get().strip()
+    if not key:
+        analytics_text.after(0, lambda: update_analytics_text("No API key set."))
+        return
+
+    cancel_button.config(state="disabled")
+    analytics_text.after(0, lambda: update_analytics_text("Sending reset request..."))
+
+    def do_request():
+        try:
+            resp = requests.post(
+                API_URL,
+                headers={"x-api-key": key},
+                timeout=10
+            )
+            text = f"Status: {resp.status_code}\nResponse: {resp.text}"
+        except Exception as e:
+            text = f"Request failed: {e}"
+
+        analytics_text.after(0, lambda: update_analytics_text(text))
+        cancel_button.after(0, lambda: cancel_button.config(state="normal"))
+
+    threading.Thread(target=do_request, daemon=True).start()
     
-    cancel_button.config(state="enabled") 
+    cancel_button.config(state="normal") 
     analytics_text.after(0, lambda: update_analytics_text("Sending reset request..."))
 
 def send_prompt():

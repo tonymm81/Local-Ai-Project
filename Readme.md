@@ -55,6 +55,11 @@
 - Ui updated. Now the agents are responding to python app in client computer. 
 - Lets merge the branch for this version
 
+
+### version 108
+- Fixing the reset agent from user ui. Now it is working and it is resetting the containers and proxy service.
+- Adding the http post to desktop ui, where user can reset the agents if they stay in endless loop.
+
 #### bug
 - the cancelbutton does not do anything, so I think that admin_reset.py has some issues but I need to check the logs, before contiuing troubleshooting.
 
