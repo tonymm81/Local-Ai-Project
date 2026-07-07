@@ -61,7 +61,10 @@
 - Adding the http post to desktop ui, where user can reset the agents if they stay in endless loop.
 
 #### bug
-- the cancelbutton does not do anything, so I think that admin_reset.py has some issues but I need to check the logs, before contiuing troubleshooting.
+- the cancelbutton does not do anything, so I think that admin_reset.py has some issues but I need to check the logs, before contiuing troubleshooting. (Fixed on 108)
+
+### version 109
+- Planning to add conversation history for this project
 
 #### plan 01
 - Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt.
