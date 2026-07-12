@@ -4,13 +4,31 @@ import uuid
 import hashlib
 import httpx
 import asyncio
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Path, Query
 from fastapi.responses import JSONResponse
 import aiomysql
 
 from ndjson_parser import ensure_schema, assemble_ndjson_text_and_store, store_request_summary
 import logging
 from logging.handlers import RotatingFileHandler
+from urllib.parse import urljoin#version 109
+import re
+
+_SAFE_PATH_RE = re.compile(r"^/[-A-Za-z0-9_./%]*$")#version 109
+
+def get_action_path(agent: str, action: str) -> str:#version 109
+    if agent in AGENT_OVERRIDES and action in AGENT_OVERRIDES[agent]:
+        return AGENT_OVERRIDES[agent][action]
+    if action in AGENT_ENDPOINTS:
+        return AGENT_ENDPOINTS[action]
+    raise HTTPException(status_code=400, detail="Unknown action")
+
+def compose_upstream(agent: str, path: str) -> str:#version 109
+    base = AGENT_URLS.get(agent)
+    if not base:
+        raise HTTPException(status_code=400, detail="Unknown agent")
+    return urljoin(base.rstrip("/") + "/", path.lstrip("/"))
+
 
 LOG_PATH = "/opt/ollama_proxy/proxy_main.log"
 
@@ -24,30 +42,49 @@ handler.setFormatter(formatter)
 if not logger.handlers:
     logger.addHandler(handler)
 
-AGENT_URLS = {# please notify, edit here "http://127.0.0.1:11435 and rest of endpoint /ape/generate or /api/getData etc goes to different list
-    "pixatrail": os.getenv("OLLAMA_PIXATRAIL_URL", "http://127.0.0.1:11435/api/generate"),#all 3 agents endpoint ports
-    "ollama-dev": os.getenv("OLLAMA_DEV_URL", "http://127.0.0.1:11436/api/generate"),
-    "ollama-qwen": os.getenv("OLLAMA_QWEN_URL", "http://127.0.0.1:11440/generate")
+AGENT_URLS = {#version 109
+    "pixatrail": os.getenv("OLLAMA_PIXATRAIL_URL", "http://127.0.0.1:7860"),
+    "ollama-dev": os.getenv("OLLAMA_DEV_URL", "http://127.0.0.1:7861"),
+    "ollama-qwen": os.getenv("OLLAMA_QWEN_URL", "http://127.0.0.1:11440"),
 }
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11435/api/generate")
+# Only the actions you actually use (no 'models' entry)
+AGENT_ENDPOINTS = {#version 109
+    "generate": "/api/generate",        # default
+    "data_list": "/agent/data",
+    "data_messages": "/agent/data/messages",
+    "data_last": "/agent/data/last",
+    "delete": "/agent/data"             # DELETE with ?conversation_title=...
+}
+
+# Per-agent overrides for actions that differ from the default
+AGENT_OVERRIDES = {#version 109
+    "pixatrail": { "generate": "/api/generate" },   # pixatrail uses /api/generate
+    "ollama-dev": { "generate": "/generate" },      # dev agent uses /api/generate
+    "ollama-qwen": { "generate": "/generate" }      # qwen uses /generate (no /api/)
+}
 
 def resolve_upstream(agent_name: str):
     if not agent_name:
-        return OLLAMA_URL
+        return None
     if agent_name not in AGENT_URLS:
         raise HTTPException(status_code=400, detail="Unknown agent")
     return AGENT_URLS[agent_name]
 
 
 DB = {
-    "host": "127.0.0.1",
-    "port": 3306,
-    "user": "proxy",
-    "password": "xxxxx",
-    "db": "ollama_proxy",
+    "host": os.getenv("OLLAMA_DB_HOST", "127.0.0.1"),
+    "port": int(os.getenv("OLLAMA_DB_PORT", "3306")),
+    "user": os.getenv("OLLAMA_DB_USER", "proxy"),
+    "password": os.getenv("OLLAMA_DB_PASSWORD", ""),
+    "db": os.getenv("OLLAMA_DB_NAME", "ollama_proxy"),
     "autocommit": True
 }
+
+# Validate at startup
+if not DB["password"]:
+    logger.error("Database password not set in OLLAMA_DB_PASSWORD")
+    raise RuntimeError("Missing DB password environment variable OLLAMA_DB_PASSWORD")
 
 async def get_conn():
     return await aiomysql.connect(**DB)
@@ -65,7 +102,38 @@ async def startup():
 async def generate(request: Request):
     body = await request.json()
     agent = body.get("agent")
-    upstream = resolve_upstream(agent)
+    if not agent:
+        raise HTTPException(status_code=400, detail="agent required")
+
+    # conversation_title from client (optional but forwarded and returned)
+    conversation_title = body.get("conversation_title")
+
+    # action or raw path selection (prefer action)
+    action = body.get("action")
+    client_path = body.get("path")
+
+    # Decide path: prefer action, fallback to client_path, default to 'generate'
+    if action:
+        try:
+            path = get_action_path(agent, action)
+        except HTTPException:
+            raise
+    elif client_path:
+        if not isinstance(client_path, str) or not client_path.startswith("/"):
+            raise HTTPException(status_code=400, detail="path must start with '/'")
+        if ".." in client_path or not _SAFE_PATH_RE.match(client_path):
+            raise HTTPException(status_code=400, detail="invalid path")
+        path = client_path
+    else:
+        path = get_action_path(agent, "generate")
+
+    # Compose upstream URL safely
+    upstream = compose_upstream(agent, path)
+
+    # Ensure conversation_title is present in forwarded body if provided
+    if conversation_title:
+        body["conversation_title"] = conversation_title
+
     req_id = str(uuid.uuid4())
     model = body.get("model", "unknown")
     prompt = body.get("prompt", "")
@@ -94,12 +162,19 @@ async def generate(request: Request):
 
     end = time.time()
 
-    await store_request_summary(req_id, model, prompt_hash, start, end, tokens, agent=agent)
+    # Try to include conversation_title in summary if store_request_summary supports it.
+    # If it doesn't, this call should be adjusted to match your function signature.
+    try:
+        await store_request_summary(req_id, model, prompt_hash, start, end, tokens, agent=agent, conversation_title=conversation_title)
+    except TypeError:
+        # fallback: call without conversation_title if signature doesn't accept it
+        await store_request_summary(req_id, model, prompt_hash, start, end, tokens, agent=agent)
 
     result = {
         "request_id": req_id,
         "model": model,
         "agent": agent,
+        "conversation_title": conversation_title,
         "tokens": tokens,
         "latency_ms": int((end - start) * 1000),
         "text": full,
@@ -113,6 +188,7 @@ async def generate(request: Request):
         return JSONResponse(result, status_code=502)
 
     return JSONResponse(result)
+
 
 @app.get("/stats")
 async def stats():
@@ -174,3 +250,90 @@ async def get_request(request_id: str):
         },
         "events": [{"ts": e[0], "raw_line": e[1]} for e in events]
     }
+
+
+
+# Version 109 changes
+@app.get("/proxy/{agent}/conversations")
+async def list_conversations(agent: str = Path(...), limit: int = Query(100), offset: int = Query(0)):
+    path = get_action_path(agent, "data_list")
+    upstream = compose_upstream(agent, path)
+
+    # Log upstream call
+    logger.info("Proxying list_conversations agent=%s upstream=%s params=%s", agent, upstream, {"limit": limit, "offset": offset})
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(upstream, params={"limit": limit, "offset": offset})
+
+    # Log upstream response summary
+    try:
+        content_preview = (resp.text[:500] + "...") if len(resp.text) > 500 else resp.text
+    except Exception:
+        content_preview = "<unable to read response text>"
+    logger.info("Upstream response for list_conversations agent=%s status=%s content_len=%d preview=%s",
+                agent, resp.status_code, len(resp.content or b""), content_preview)
+
+    try:
+        content = resp.json()
+    except Exception:
+        content = resp.text
+    return JSONResponse(status_code=resp.status_code, content=content)
+
+
+@app.get("/proxy/{agent}/conversations/{conversation_title}/messages")
+async def get_messages(
+    agent: str = Path(...),
+    conversation_title: str = Path(...),
+    limit: int = Query(200),
+    offset: int = Query(0)
+):
+    path = get_action_path(agent, "data_messages")
+    upstream = compose_upstream(agent, path)
+
+    # Log upstream call
+    logger.info("Proxying get_messages agent=%s upstream=%s params=%s",
+                agent, upstream, {"conversation_title": conversation_title, "limit": limit, "offset": offset})
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(upstream, params={"conversation_title": conversation_title, "limit": limit, "offset": offset})
+
+    # Log upstream response summary
+    try:
+        content_preview = (resp.text[:500] + "...") if len(resp.text) > 500 else resp.text
+    except Exception:
+        content_preview = "<unable to read response text>"
+    logger.info("Upstream response for get_messages agent=%s status=%s content_len=%d preview=%s",
+                agent, resp.status_code, len(resp.content or b""), content_preview)
+
+    try:
+        content = resp.json()
+    except Exception:
+        content = resp.text
+    return JSONResponse(status_code=resp.status_code, content=content)
+
+
+@app.delete("/proxy/{agent}/conversations/{conversation_title}")
+async def delete_conversation(agent: str = Path(...), conversation_title: str = Path(...)):
+    path = get_action_path(agent, "delete")
+    upstream = compose_upstream(agent, path)
+
+    # Log upstream call
+    logger.info("Proxying delete_conversation agent=%s upstream=%s params=%s",
+                agent, upstream, {"conversation_title": conversation_title})
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.delete(upstream, params={"conversation_title": conversation_title})
+
+    # Log upstream response summary
+    try:
+        content_preview = (resp.text[:500] + "...") if len(resp.text) > 500 else resp.text
+    except Exception:
+        content_preview = "<unable to read response text>"
+    logger.info("Upstream response for delete_conversation agent=%s status=%s content_len=%d preview=%s",
+                agent, resp.status_code, len(resp.content or b""), content_preview)
+
+    try:
+        content = resp.json()
+    except Exception:
+        content = resp.text
+    return JSONResponse(status_code=resp.status_code, content=content)

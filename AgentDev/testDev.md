@@ -1,46 +1,44 @@
-
-
-  OLD curl -v --max-time 300 http://localhost:11436/api/generate \
+OLD curl -v --max-time 300 http://localhost:11436/api/generate \
   -H "Content-Type: application/json" \
   -d '{"model":"phi_2_gguf:latest","prompt":"testi","stream":false}'
 
  OLD curl -v --max-time 300 http://localhost:11436/api/generate -H "Content-Type: application/json" -d '{"model":"phi_2_gguf:latest","prompt":"testi","stream":false}'
 
 
-Logit:
+## Logit:
 sudo docker logs --tail 200 970c812da4e2
 
-Curl:
+## Curl(Docker container):
 
 PORT=7861
 
-Conv 1
+## Conv 1
 curl -v -X POST "http://localhost:$PORT/generate" \
   -H "Content-Type: application/json" \
   -d '{"prompt":"Hello dev agent, say a full sentence please","conversation_title":"Conversation A","model":"phi_2_gguf:latest"}'
 
-Conv2
+## Conv2
 
 curl -v -X POST "http://localhost:$PORT/generate" \
   -H "Content-Type: application/json" \
   -d '{"prompt":"Hello dev agent, introduce yourself in one sentence","conversation_title":"Conversation B","model":"phi_2_gguf:latest"}'
 
-List conversations:
+## List conversations:
 
 curl -s "http://localhost:$PORT/agent/data" | jq .
 # ilman jq:
 # curl "http://localhost:$PORT/agent/data"
 
-List messages based on conversation_title
+## List messages based on conversation_title
 curl -s "http://localhost:$PORT/agent/data/messages?conversation_title=Conversation%20A" | jq .
 
 curl -s "http://localhost:$PORT/agent/data/messages?conversation_title=Conversation%20B" | jq .
 
-Get all messages from convwerstation a 
+## Get all messages from convwerstation a 
 curl -s "http://localhost:$PORT/agent/data/last?conversation_title=Conversation%20A&n=6" | jq .
 
 
-Delete
+## Delete
 curl -v -X DELETE "http://localhost:$PORT/agent/data?conversation_title=Conversation%20A"
 
 

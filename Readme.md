@@ -70,7 +70,9 @@
 - Agent dev has now new conversation feature and it is tested.
 - Agent pixatrail has now updated with new features also. This features is tested now.
 
+- Proxy server updated and tested
 
+- Desktopapp need to plan and update to correct endpoints. 
 
 #### plan 01
 - Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt.

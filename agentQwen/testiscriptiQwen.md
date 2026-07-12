@@ -1,17 +1,14 @@
 OLD  curl -v -X POST http://localhost:11439/generate \
   -H "Content-Type: application/json" \
   -d '{"prompt":"testi", "model":"qwen"}'
-
-
-
 OLD curl http://localhost:11440/generate -H "Content-Type: application/json" -d '{"prompt":"how are you?"}'
 
 
-Logs:
+## Logs:
 
 sudo docker logs --tail 200 ollama-qwen
 
-Two questions:
+## Two questions (docker container):
 
 curl -v -X POST http://localhost:11440/generate \
   -H "Content-Type: application/json" \
@@ -21,18 +18,18 @@ curl -v -X POST http://localhost:11440/generate \
   -H "Content-Type: application/json" \
   -d '{"prompt":"Follow up question","conversation_title":"MyTopic A","model":"qwen2.5:7b"}' with same title 
 
-Get titles:
+## Get titles:
 
 curl -s "http://localhost:11440/agent/data" | jq 
 
-Get conversations based on title:
+## Get conversations based on title:
 
 curl -s "http://localhost:11440/agent/data/messages?conversation_title=MyTopic%20A" | jq .
 
-Get latest lines
+## Get latest lines
 curl -s "http://localhost:11440/agent/data/last?conversation_title=MyTopic%20A&n=6" | jq .
 
-Delete conversatiopn based on title 
+## Delete conversatiopn based on title 
 
 curl -v -X DELETE "http://localhost:11440/agent/data?conversation_title=MyTopic%20A"
 

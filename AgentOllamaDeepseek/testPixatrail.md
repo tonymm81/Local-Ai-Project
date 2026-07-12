@@ -1,4 +1,4 @@
-Mariadb table creation 
+## Mariadb table creation 
 USE agent1_db;
 
 CREATE TABLE IF NOT EXISTS prompts (
@@ -11,10 +11,10 @@ CREATE TABLE IF NOT EXISTS prompts (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-Logs:
+## Logs:
 sudo docker logs --since 1m localai-agent --tail 200
 
-Curl:
+## Curl (docker container):
 curl -v -X POST "http://127.0.0.1:7860/api/generate" \
   -H "Content-Type: application/json" \
   -d '{"prompt":"health check","model":"pixtral-12b-q2:latest","conversation_title":"smoke-test","user_id":"tester"}'
@@ -25,21 +25,15 @@ curl -sS -X POST "http://127.0.0.1:7860/api/generate" \
   -H "Content-Type: application/json" \
   -d '{"prompt":"How to boil the eggs?","model":"pixtral-12b-q2:latest","conversation_title":"Kasvisruoka?","user_id":"tester"}'
 
-Search all conversations
+##  Search all conversations
 curl -sS "http://127.0.0.1:7860/agent/data?limit=100&offset=0" | jq .
 
-Sreacrh conversation based con title 
+## Seacrh conversation based con title 
 curl -sS "http://127.0.0.1:7860/agent/data/messages?conversation_title=Aamurutiini%3F&limit=200&offset=0" | jq .
 or 
 curl -sS "http://127.0.0.1:7860/agent/data/last?conversation_title=Kasvisruoka%3F&n=6" | jq .
 
-Delete:
+## Delete:
 
 curl -sS -X DELETE "http://127.0.0.1:7860/agent/data?conversation_title=Aamurutiini%3F"
 
-OLDhttp://127.0.0.1:9000/generate and 
-{
-  "model": "pixtral-12b-q2:latest",
-  "prompt": "test",
-  "max_tokens": 32
-}
