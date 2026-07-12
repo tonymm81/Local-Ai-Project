@@ -8,11 +8,11 @@ import json
 from datetime import datetime
 import os
 
-PROXY = "http://192.168.68.204:8080"
-API_URL = os.getenv("API_URL", "http://192.168.68.204:5001/admin/reset")
+PROXY = "http://192.168.68.204:8080"#port, what is visible in localhost
+API_URL = os.getenv("API_URL", "http://192.168.68.204:5001/admin/reset")#reset the agents
 API_KEY = os.getenv("API_KEY", "ThisIsThePassw0rd!") # tyhjä jos ei asetettu
 
-AGENT_DEFAULT_MODEL = {
+AGENT_DEFAULT_MODEL = {# all 3 agents names
     "pixatrail": "pixtral-12b-q2:latest",
     "ollama-dev": "phi_2_gguf:latest",
     "ollama-qwen": "qwen2.5:7b"

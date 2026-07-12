@@ -24,8 +24,8 @@ handler.setFormatter(formatter)
 if not logger.handlers:
     logger.addHandler(handler)
 
-AGENT_URLS = {
-    "pixatrail": os.getenv("OLLAMA_PIXATRAIL_URL", "http://127.0.0.1:11435/api/generate"),
+AGENT_URLS = {# please notify, edit here "http://127.0.0.1:11435 and rest of endpoint /ape/generate or /api/getData etc goes to different list
+    "pixatrail": os.getenv("OLLAMA_PIXATRAIL_URL", "http://127.0.0.1:11435/api/generate"),#all 3 agents endpoint ports
     "ollama-dev": os.getenv("OLLAMA_DEV_URL", "http://127.0.0.1:11436/api/generate"),
     "ollama-qwen": os.getenv("OLLAMA_QWEN_URL", "http://127.0.0.1:11440/generate")
 }
