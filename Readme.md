@@ -66,11 +66,13 @@
 ### version 109
 - Planning to add conversation history for this project
 
+#### backend updates
 - Agent qwen has now the conversation history feature updated and tested.
 - Agent dev has now new conversation feature and it is tested.
 - Agent pixatrail has now updated with new features also. This features is tested now.
 
 - Proxy server updated and tested
+#### in next version:
 
 - Desktopapp need to plan and update to correct endpoints. 
 
