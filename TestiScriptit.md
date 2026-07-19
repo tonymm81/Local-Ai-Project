@@ -32,6 +32,34 @@ sudo tail -f /opt/ollama_proxy/ndJsonParser.log
 nvidia-smi -l 1 tai nvtop
 htop
 
+### Reset in server
+- sudo bash -x /usr/local/bin/reset_agent.sh 2>&1 | sudo tee /var/log/reset_agent.log
+
+- curl -v -X POST http://127.0.0.1:5001/admin/reset -H "x-api-key: Sencured"
+
+- ssh -p 9000 -L 5001:127.0.0.1:8080 tonymm81@192.168.68.126 -N
+
+- Ollama 8080 ja resetointipalveli 5001
+
+## Python venv
+
+- python -m venv .venv
+
+- source .venv/Scripts/activate
+
+- python -m pip install requests
+
+- ./.venv/Scripts/python.exe DeskTopApp.py
+
+
+### reset proxy server
+
+- sudo cp -f main.py /opt/ollama_proxy/main.py sudo cp -f ndjson_parser.py /opt/ollama_proxy/ndjson_parser.py
+- sudo systemctl restart ollama-proxy sudo journalctl -u ollama-proxy -f
+
+### reset all docker containers
+- sudo /usr/local/bin/reset_agent.sh
+
 ## Proxyn routes updated 12.7.2026
 ### Qwen:
 curl -v -X POST "http://127.0.0.1:8080/generate" \
