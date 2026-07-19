@@ -1,6 +1,6 @@
-Pixatrail agent curl:
+## Pixatrail agent curl:
 
-Curl:
+### Curl:
 curl -v -X POST "http://127.0.0.1:7860/api/generate" \
   -H "Content-Type: application/json" \
   -d '{"prompt":"health check","model":"pixtral-12b-q2:latest","conversation_title":"smoke-test","user_id":"tester"}'
@@ -11,54 +11,54 @@ curl -sS -X POST "http://127.0.0.1:7860/api/generate" \
   -H "Content-Type: application/json" \
   -d '{"prompt":"How to boil the eggs?","model":"pixtral-12b-q2:latest","conversation_title":"Kasvisruoka?","user_id":"tester"}'
 
-Search all conversations
+### Search all conversations
 curl -sS "http://127.0.0.1:7860/agent/data?limit=100&offset=0" | jq .
 
-Sreacrh conversation based con title 
+### Sreacrh conversation based con title 
 curl -sS "http://127.0.0.1:7860/agent/data/messages?conversation_title=Aamurutiini%3F&limit=200&offset=0" | jq .
 or 
 curl -sS "http://127.0.0.1:7860/agent/data/last?conversation_title=Kasvisruoka%3F&n=6" | jq .
 
-Delete:
+### Delete:
 
 curl -sS -X DELETE "http://127.0.0.1:7860/agent/data?conversation_title=Aamurutiini%3F"
 
-Dev agent curl:
+## Dev agent curl:
 
 PORT=7861
 
-Conv 1
+### Conv 1
 curl -v -X POST "http://localhost:$PORT/generate" \
   -H "Content-Type: application/json" \
   -d '{"prompt":"Hello dev agent, say a full sentence please","conversation_title":"Conversation A","model":"phi_2_gguf:latest"}'
 
-Conv2
+### Conv2
 
 curl -v -X POST "http://localhost:$PORT/generate" \
   -H "Content-Type: application/json" \
   -d '{"prompt":"Hello dev agent, introduce yourself in one sentence","conversation_title":"Conversation B","model":"phi_2_gguf:latest"}'
 
-List conversations:
+### List conversations:
 
 curl -s "http://localhost:$PORT/agent/data" | jq .
-# ilman jq:
-# curl "http://localhost:$PORT/agent/data"
+ilman jq:
+curl "http://localhost:$PORT/agent/data"
 
-List messages based on conversation_title
+### List messages based on conversation_title
 curl -s "http://localhost:$PORT/agent/data/messages?conversation_title=Conversation%20A" | jq .
 
 curl -s "http://localhost:$PORT/agent/data/messages?conversation_title=Conversation%20B" | jq .
 
-Get all messages from convwerstation a 
+### Get all messages from convwerstation a 
 curl -s "http://localhost:$PORT/agent/data/last?conversation_title=Conversation%20A&n=6" | jq .
 
 
-Delete
+### Delete
 curl -v -X DELETE "http://localhost:$PORT/agent/data?conversation_title=Conversation%20A"
 
-Qwen agent curl:
+## Qwen agent curl:
 
-Two questions:
+### Two questions:
 
 curl -v -X POST http://localhost:11440/generate \
   -H "Content-Type: application/json" \
@@ -68,18 +68,18 @@ curl -v -X POST http://localhost:11440/generate \
   -H "Content-Type: application/json" \
   -d '{"prompt":"Follow up question","conversation_title":"MyTopic A","model":"qwen2.5:7b"}' with same title 
 
-Get titles:
+### Get titles:
 
 curl -s "http://localhost:11440/agent/data" | jq 
 
-Get conversations based on title:
+### Get conversations based on title:
 
 curl -s "http://localhost:11440/agent/data/messages?conversation_title=MyTopic%20A" | jq .
 
-Get latest lines
+### Get latest lines
 curl -s "http://localhost:11440/agent/data/last?conversation_title=MyTopic%20A&n=6" | jq .
 
-Delete conversatiopn based on title 
+### Delete conversatiopn based on title 
 
 curl -v -X DELETE "http://localhost:11440/agent/data?conversation_title=MyTopic%20A"
 
