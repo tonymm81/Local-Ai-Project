@@ -18,7 +18,7 @@ Muokataan nykyistä appi aseuraavanlaisesti:
 2.1.2 Historia näkymässä voidaan poistaa kaikki keskustelut valitusta aiheesta.
 2.1.3 Sovellus päivittää näkymän poiston jälkeen
 3.1 Kun keskustelu näkymässä ollaan oli se sitten uusi keskustelu tai vanha, voidaan valita radio buttonista agentti.
-3.1.1 Kun agentti valitsinta muutetaan, se palaa näkymään, jossa käyttäjän pitää valita uusi keskustelu (aiheella) tai jatkaa vanhaa.
+3.1.1 Kun agentti valitsinta muutetaan, se palaa näkymään, jossa käyttäjän pitää valita uusi keskustelu (käyttäjä antaa aiheen) tai jatkaa vanhaa.
 4.1 Sovellukseen tulee myös koodi ikkuna näkymään, jossa käyttäjä voi syöttää promptin. Tämä siis käsitellään backendissä siten, ettei se riko jsonia
 
 

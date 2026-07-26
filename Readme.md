@@ -80,6 +80,17 @@
 
 - Added plans, how we should build the user ui app. When this is working, then we create same kind on react native app.
 
+- Created new ui with new logic and routes. I have added the ai agent ui plan.drawio where is graphical user path and logic is explained in ai agent python app ui.txt plan.
+
+- For now ui let user to select existing conversation and pick the answer to continue the conversation.
+- Tested with all different agents. Deleting the conversation is also working. Agent response to app.
+
+##### bug and plans
+
+- The analytics window needs to configure ready.
+- Earlier agent answer is staying in agent responce window and it should be removed, when chancing the new agent.
+- dev agent is not returning any conversation data to ui.
+
 #### plan 01
 - Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt.
 
