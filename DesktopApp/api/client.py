@@ -2,7 +2,7 @@
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from .endpoints import generate_url, list_conversations_url, get_messages_url, delete_conversation_url
+from .endpoints import generate_url, list_conversations_url, get_messages_url, delete_conversation_url, stats_url, request_details_url
 
 DEFAULT_TIMEOUT = 620  # sekunteina
 
@@ -15,7 +15,7 @@ class ApiClient:
         s.mount("https://", HTTPAdapter(max_retries=retries))
         self.session = s
 
-    def generate(self, agent: str, prompt: str, model: str, conversation_title: str, user_id: str = None):
+    def generate(self, agent: str, prompt: str, model: str, conversation_title: str, user_id: str = None,):
         url = generate_url()
         payload = {
             "agent": agent,
@@ -28,8 +28,12 @@ class ApiClient:
             payload["user_id"] = user_id
         resp = self.session.post(url, json=payload, timeout=self.timeout)
         resp.raise_for_status()
-        return resp.json()
-
+        data = resp.json()
+        print("DEBUG PROXY RESPONSE:", data)
+        self.last_request_id = data.get("request_id")
+        #return resp.json()
+        return data
+    
     def list_conversations(self, agent: str, limit: int = 100, offset: int = 0):
         url = list_conversations_url(agent, limit, offset)
         resp = self.session.get(url, timeout=self.timeout)
@@ -82,3 +86,16 @@ class ApiClient:
         resp = self.session.delete(url, timeout=self.timeout)
         resp.raise_for_status()
         return resp.status_code == 200
+
+
+    def get_stats(self):
+        url = stats_url()
+        resp = self.session.get(url, timeout=self.timeout)
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_request_details(self, request_id: str):
+        url = request_details_url(request_id)
+        resp = self.session.get(url, timeout=self.timeout)
+        resp.raise_for_status()
+        return resp.json()

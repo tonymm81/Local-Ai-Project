@@ -18,3 +18,9 @@ def get_messages_url(agent: str, conversation_title: str, limit: int = 200, offs
 def delete_conversation_url(agent: str, conversation_title: str):
     title_enc = quote_plus(conversation_title)
     return f"{BASE_URL}/proxy/{agent}/conversations/{title_enc}"
+
+def stats_url(): # version 111 adding the analytics
+    return f"{BASE_URL}/stats"
+
+def request_details_url(request_id: str):
+    return f"{BASE_URL}/requests/{request_id}"

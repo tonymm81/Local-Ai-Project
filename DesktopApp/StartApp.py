@@ -21,13 +21,14 @@ from current_agent_store import CurrentAgentStore
 
 import requests
 import threading
+BASE_URL = "http://192.168.68.204:8080"
 
 API_URL = os.getenv("API_URL", "http://192.168.68.204:5001/admin/reset")
 API_KEY = os.getenv("API_KEY", "ThisIsThePassw0rd!") # tyhjä jos ei asetettu
 
-api_client = ApiClient(timeout=15)
-repo = ServerRepository(api_client)
-current_store = CurrentAgentStore(repo)
+#api_client = ApiClient(timeout=15)
+#repo = ServerRepository(api_client)
+#current_store = CurrentAgentStore(repo)
 
 AGENT_DEFAULT_MODEL = {
     "pixatrail": "pixtral-12b-q2:latest",
@@ -76,6 +77,7 @@ class App:
         self.root.title("AI Agent App Prototype")
         self.agent = None
         self.topic = None
+        self.last_request_id = None
         self.current_response = ""
         # Repo ja store (yksi instanssi sovellukselle)
         api_client = ApiClient(timeout=620)
@@ -323,9 +325,29 @@ class App:
 
     # Dialog 6 Analytics
     def show_analytics(self):
-        # Jos haluat näyttää dynaamisen analytiikan, anna teksti tähän
-        analytics_text = "Analytics data (dummy)\n\nSentiment: Neutral\nTokens: 123\nConfidence: 0.87"
-        AnalyticsView(self.root, analytics_text=analytics_text, theme_dark=True)
+        if not self.last_request_id:
+            AnalyticsView(self.root, analytics_text="No analytics available yet.")
+            return
+
+        stats = self.repo.api.get_stats()
+        req = self.repo.api.get_request_details(self.last_request_id)
+
+        text = []
+        text.append("=== Global Stats ===")
+        text.append(f"Total requests: {stats.get('total_requests')}")
+        text.append(f"Avg latency: {stats.get('avg_latency_ms')} ms")
+        text.append(f"Total tokens: {stats.get('total_tokens')}")
+        text.append("")
+
+        summary = req.get("summary", {})
+        text.append("=== Last Request Summary ===")
+        text.append(f"Request ID: {summary.get('request_id')}")
+        text.append(f"Model: {summary.get('model')}")
+        text.append(f"Latency: {summary.get('latency_ms')} ms")
+        text.append(f"Tokens: {summary.get('tokens')}")
+        text.append("")
+
+        AnalyticsView(self.root, analytics_text="\n".join(text))
 
     # Send prompt (combine prompt + code into single prompt string)
     def send_prompt(self):
@@ -346,6 +368,7 @@ class App:
         try:
             msg = self.current_store.save_prompt_to_server(self.topic, combined, model, user_id="tester")
             self._display_response(msg.response_text or str(msg))
+            self.last_request_id = self.repo.api.last_request_id
         except Exception as e:
             messagebox.showerror("API error", f"Failed to send prompt: {e}")
 

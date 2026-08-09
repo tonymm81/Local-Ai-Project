@@ -81,6 +81,7 @@ class CurrentAgentStore:
         if not self.agent_id:
             raise RuntimeError("No agent selected")
         result = self.repo.generate(agent_id=self.agent_id, prompt=prompt, model=model, conversation_title=topic, user_id=user_id)
+        self.repo.api.last_request_id = result.get("request_id")#version 111
         # result voi sisältää tallennetun promptin id, response, created_at jne.
         # Päivitä cache: lisää uusi Message, käytä result:n kenttiä jos saat
         response_text = result.get("response") or result.get("text") or str(result)

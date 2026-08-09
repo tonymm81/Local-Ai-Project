@@ -49,7 +49,7 @@ htop
 
 - python -m pip install requests
 
-- ./.venv/Scripts/python.exe DeskTopApp.py
+- ./.venv/Scripts/python.exe StartApp.py
 
 
 ### reset proxy server

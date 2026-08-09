@@ -1,6 +1,6 @@
 ## Local host ai project
 
-- I build the linux server from my old gaming laptop. Then I download the ollama deepseek to there and it is running inside docker container. There is also ollama_watchdog.py what is controlling, that how long time ai agent can convert the answer.
+- I build the linux server from my old gaming pc. Then I download the ollama to there and it is running inside docker container. There is also ollama_watchdog.py what is controlling, that how long time ai agent can convert the answer.
 
 - There is also ollama_proxy, what handles the api calls from client applications. Ollama agent answers like one word per apirequest so this ollama_proxy collect the ai agent answer before restore it to client application.
 
@@ -85,11 +85,20 @@
 - For now ui let user to select existing conversation and pick the answer to continue the conversation.
 - Tested with all different agents. Deleting the conversation is also working. Agent response to app.
 
+### version 111
+- DeskTopApp is deprecated and not working any more.
+- I will merge this branch, because new features is working now and there is only small changes, what needs to be done.
+- Repairing the analytics view
+
 ##### bug and plans
 
-- The analytics window needs to configure ready.
 - Earlier agent answer is staying in agent responce window and it should be removed, when chancing the new agent.
-- dev agent is not returning any conversation data to ui.
+- Perhaps I just add clear conversation history button, what removes the old answers
+- Perhaps I need text formatter to agents answer. (the old text formatted did not work so good)
+- wholse ui is freezing when it is waiting agent answer and also that why the cancel button wont work.
+- When Iam selecting the old conversation, it returns to prompt window but there should be something, what tells to agent that this was the earlier answer.
+- Promt input field should be also scroll window like code block is now.
+
 
 #### plan 01
 - Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt.
