@@ -1,6 +1,6 @@
 ## Local host ai project
 
-- I build the linux server from my old gaming laptop. Then I download the ollama deepseek to there and it is running inside docker container. There is also ollama_watchdog.py what is controlling, that how long time ai agent can convert the answer.
+- I build the linux server from my old gaming pc. Then I download the ollama to there and it is running inside docker container. There is also ollama_watchdog.py what is controlling, that how long time ai agent can convert the answer.
 
 - There is also ollama_proxy, what handles the api calls from client applications. Ollama agent answers like one word per apirequest so this ollama_proxy collect the ai agent answer before restore it to client application.
 
@@ -61,7 +61,44 @@
 - Adding the http post to desktop ui, where user can reset the agents if they stay in endless loop.
 
 #### bug
-- the cancelbutton does not do anything, so I think that admin_reset.py has some issues but I need to check the logs, before contiuing troubleshooting.
+- the cancelbutton does not do anything, so I think that admin_reset.py has some issues but I need to check the logs, before contiuing troubleshooting. (Fixed on 108)
+
+### version 109
+- Planning to add conversation history for this project
+
+#### backend updates
+- Agent qwen has now the conversation history feature updated and tested.
+- Agent dev has now new conversation feature and it is tested.
+- Agent pixatrail has now updated with new features also. This features is tested now.
+
+- Proxy server updated and tested
+#### in next version:
+
+- Desktopapp need to plan and update to correct endpoints. 
+
+### version 110
+
+- Added plans, how we should build the user ui app. When this is working, then we create same kind on react native app.
+
+- Created new ui with new logic and routes. I have added the ai agent ui plan.drawio where is graphical user path and logic is explained in ai agent python app ui.txt plan.
+
+- For now ui let user to select existing conversation and pick the answer to continue the conversation.
+- Tested with all different agents. Deleting the conversation is also working. Agent response to app.
+
+### version 111
+- DeskTopApp is deprecated and not working any more.
+- I will merge this branch, because new features is working now and there is only small changes, what needs to be done.
+- Repairing the analytics view
+
+##### bug and plans
+
+- Earlier agent answer is staying in agent responce window and it should be removed, when chancing the new agent.
+- Perhaps I just add clear conversation history button, what removes the old answers
+- Perhaps I need text formatter to agents answer. (the old text formatted did not work so good)
+- wholse ui is freezing when it is waiting agent answer and also that why the cancel button wont work.
+- When Iam selecting the old conversation, it returns to prompt window but there should be something, what tells to agent that this was the earlier answer.
+- Promt input field should be also scroll window like code block is now.
+
 
 #### plan 01
 - Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt.
@@ -71,22 +108,9 @@
 #### plan 02
 - Lets build a feature, that you can see the chat history in client app also.
 
-## Test
-- curl -s -X POST http://127.0.0.1:8080/generate \
-  -H "Content-Type: application/json" \
-  -d '{"model":"pixtral-12b-q2:latest","prompt":"test","max_tokens":32}' | jq .
 
-### Ssh connection test postman
 
-##pixtrail test
-- http://127.0.0.1:9000/generate and 
-{
-  "model": "pixtral-12b-q2:latest",
-  "prompt": "test",
-  "max_tokens": 32
-}
-
-## ai project folder path
+## ai project pixatrail folder path
 
 
 mnt/tonidata/AgentOllamaDeepseek/agent/  |-.env             /models/
@@ -122,30 +146,4 @@ usr/bin/ollama_watchdog.py
 
 /opt/admin_reset/ admin_reset.py
 
-### Reset in server
-- sudo bash -x /usr/local/bin/reset_agent.sh 2>&1 | sudo tee /var/log/reset_agent.log
 
-- curl -v -X POST http://127.0.0.1:5001/admin/reset -H "x-api-key: Sencured"
-
-- ssh -p 9000 -L 5001:127.0.0.1:8080 tonymm81@192.168.68.126 -N
-
-- Ollama 8080 ja resetointipalveli 5001
-
-## Python venv
-
-- python -m venv .venv
-
-- source .venv/Scripts/activate
-
-- python -m pip install requests
-
-- ./.venv/Scripts/python.exe DeskTopApp.py
-
-
-### reset proxy server
-
-- sudo cp -f main.py /opt/ollama_proxy/main.py sudo cp -f ndjson_parser.py /opt/ollama_proxy/ndjson_parser.py
--sudo systemctl restart ollama-proxy sudo journalctl -u ollama-proxy -f
-
-### reset all docker containers
-- sudo /usr/local/bin/reset_agent.sh

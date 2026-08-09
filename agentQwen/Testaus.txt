@@ -1,0 +1,11 @@
+1. Kerro mitä kaikkea tarvitsee tehdä, kun olen kopioinut platalle uudet filut dockerin suhteen?
+Luo testi curlit siten että ensin kysytään jotain agentilta (että saadaan kantaan matskua)
+Sitten kokeillaan nuo hakutoimintojen curlit, ja lopuksi tehdään curli, joka poistaa tietyn conversation_titlen alta kaikki
+Avuksi olemassa oleva toimivat testi scriptit:
+curl -v -X POST http://localhost:11439/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"testi", "model":"qwen"}'
+
+sudo docker logs --tail 200 ollama-qwen
+
+ curl http://localhost:11440/generate -H "Content-Type: application/json" -d '{"prompt":"how are you?"}'

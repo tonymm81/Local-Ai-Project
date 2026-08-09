@@ -1,0 +1,61 @@
+<mxfile host="Electron">
+  <diagram name="Sivu-1" id="FPAWsUCsULVnugEmw3qB">
+    <mxGraphModel dx="2054" dy="1201" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-1" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="application startuo" vertex="1">
+          <mxGeometry height="250" width="200" x="30" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-2" parent="T8aMbrr4nWw6X0w0PPut-1" style="rounded=1;whiteSpace=wrap;html=1;" value="Please choose agent" vertex="1">
+          <mxGeometry height="60" width="120" x="40" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-3" parent="T8aMbrr4nWw6X0w0PPut-1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="Radio button" vertex="1">
+          <mxGeometry height="120" width="140" x="30" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-4" parent="T8aMbrr4nWw6X0w0PPut-3" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Pixatral" vertex="1">
+          <mxGeometry height="30" width="140" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-5" parent="T8aMbrr4nWw6X0w0PPut-3" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Agent dev" vertex="1">
+          <mxGeometry height="30" width="140" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-6" parent="T8aMbrr4nWw6X0w0PPut-3" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Agent qwen" vertex="1">
+          <mxGeometry height="30" width="140" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-7" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="Please give conversation title" vertex="1">
+          <mxGeometry height="200" width="200" x="340" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-8" parent="T8aMbrr4nWw6X0w0PPut-7" style="rounded=1;whiteSpace=wrap;html=1;" value="User input" vertex="1">
+          <mxGeometry height="60" width="120" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-9" parent="T8aMbrr4nWw6X0w0PPut-7" style="rounded=1;whiteSpace=wrap;html=1;" value="Ok button" vertex="1">
+          <mxGeometry height="60" width="120" x="20" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-10" edge="1" parent="1" source="T8aMbrr4nWw6X0w0PPut-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="T8aMbrr4nWw6X0w0PPut-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-11" parent="1" style="swimlane;whiteSpace=wrap;html=1;" value="Vertical Container" vertex="1">
+          <mxGeometry height="500" width="200" x="627" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-12" parent="T8aMbrr4nWw6X0w0PPut-11" style="rounded=1;whiteSpace=wrap;html=1;" value="User input" vertex="1">
+          <mxGeometry height="40" width="120" x="33" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-14" parent="T8aMbrr4nWw6X0w0PPut-11" style="rounded=1;whiteSpace=wrap;html=1;" value="Cancel button" vertex="1">
+          <mxGeometry height="60" width="120" x="33" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-15" parent="T8aMbrr4nWw6X0w0PPut-11" style="rounded=1;whiteSpace=wrap;html=1;" value="Prompt answer from agent" vertex="1">
+          <mxGeometry height="60" width="120" x="33" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-17" parent="T8aMbrr4nWw6X0w0PPut-11" style="rounded=1;whiteSpace=wrap;html=1;" value="Analytics data" vertex="1">
+          <mxGeometry height="60" width="120" x="33" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Code input" vertex="1">
+          <mxGeometry height="40" width="120" x="660" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="T8aMbrr4nWw6X0w0PPut-16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Analytics data" vertex="1">
+          <mxGeometry height="60" width="120" x="660" y="330" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

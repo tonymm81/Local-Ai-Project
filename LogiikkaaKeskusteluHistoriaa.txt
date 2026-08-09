@@ -1,0 +1,51 @@
+1. Tehdään ensi kaikille kolmelle agentille kantaan ja api rajapintaan conversation_id(guid) ja 
+Conversation_Title(käyttäjän syöte) ja created_at(automaattinen sen hetkinen aikaleima serveriltä). Conversation_Title on se millä haetaan kannasta tietty keskustelu. Tämä avain sana siis pitää 
+allaan asiakas sovelluksen promptin, siihen tulleen vastauksen ja muut nykyiset tietokanta lokerot.
+
+2. Tämän jälkeen lisätään dev ja qwen agentille nämä lokerot kantaan. Pixatrail eli local ai agent tarvitsee samat
+lokerot maria db konttikantaan. Huom nykyiset kannat voidaan huolella tyhjätä, ja niitä ei tarvitse alkaa varmuuskopioimaan!
+
+3. Päivitetään tietokannan käsitteliät db.py hakemaan kaikki keskustelut, 
+viimesimmät keskustelut ja tietty keskustelu ja myös poistamaan tiettyyn aiheeseen (Conversation_Title) kuuluvat keskustelut.
+
+4. Päivitetään jokaisen agentin main.py tiedostoon kolme uutta get reittiä kaikkien keskusteluitten hakuun tai 
+yksittäisen keskustelun hakuun.
+
+5. tehdään agentin main.py tiedostoon reitti myös poistolle, jossa kaikki tietyn otsikon 
+keskustelut poistetaan.
+
+6. Tämän jälkeen päivitetään proxy serverille reitit näitä 3 uutta toimintoa varten.
+
+7. Rakennetaan asiakas sovellukseen myös reitti pyynnöt eli sovelluksen käynnistyessa valittu agentti radio button
+palauttaa siis sillä agent id:llä varustetut kaikki keskustelu otsikot asiakas sovellukseen.
+
+8. Kun keskustelun otsikon klikkaa auki, näkee sielä kaikki keskustelut ja vastaukset. Käyttäjä voi valita
+siis agentin vastauksen johon hän voi vastata mutta limiittinä tässä vain yksi keskustelu laitetaan promptin matkaan.
+
+9. Mikäli joskus myöhemmin tehään tiivistys ominaisuus tai yhteenveto ominaisuus, sille luodaan erikseen agentti joka on 
+kehitetty siihen mutta ei nyt tällä kertaa. 
+
+10. Kun keskustelun vastaus on valittu asiakas sovelluksesta promptin mukaan, se joko valitaan serverillä kannasta tai asiakas sovellus 
+yhdistää sen uuteen lähetettävään promptiin. Mieluummin ehkä asiaks sovellus, niin ei tule tarpeettoman monimutkaista ja 
+vikaherkkää tietokanta manaamista serverille.
+
+11. Samalla kuin agenttien reittejä päivitetään, tarvitsee tarkistaa onko kaikilla ylhteläinen kanta käsittely, 
+ja onko healthcheckit kunnossa ja onko jotain muuta parannettavaa.
+
+12. tarkistetaan, ettei kukaa agenteista näe dockerista nettiin.
+
+13. Tässä on tarkoituksenä käydä tämä ohje läpi agentti kerrallaan, ei kaikkia kerrallaan. Yksi agentti, ominaisuukien lisäys
+ja testaus ja todennäköisesti asiakas sovellukseen asti ja sitten seuraava agentti. Toinen vaihtoehto on että kaikkiin agentteihin 
+tehdään uusi feature ja testaillaan niiden toimivuus curleilla, jonka jälkeen luodaan proxy serveriin näille pyynnöille 
+reitti jonka jälkeen vasta päivitetään uudet ominaisuudet asiakas sovellukseen.
+
+14. Miten estetään asiakas sovelluksesta tulevat koodit ettei "" esimerkiksi riko jsonia pyynnöissä? esimerkiksi omalla code block näkymällä?
+
+15. Tärkeää, mitään featurea ei saa lisätä omin päin ja varsinkaan kysymättä minulta.
+
+16. Kaikki testi curlit tallennetaan myöhempien vian etsinnöinnin helpottamiseksi.
+
+Myöhempään vaiheeseen.
+
+1. asiakas sovelluksessa täytyy tekstin formatointia parantaa ja eriyttää se omaan tiedostoonsa.
+2. Asiakas sovellukseen tulee tsekata jokin luokka tai muu hyvä vaihtoehto, johon haetaan keskustelut kannasta.

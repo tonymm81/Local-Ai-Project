@@ -1,0 +1,66 @@
+Muokataan nykyistä appi aseuraavanlaisesti:
+
+1. Olevassa olevat tekstin formatointi sun muut siihen liittyvät asiat ja ominaisuudet jää.
+2. myös agentin valitsin radio button jää.
+3. Prompt ikkuna jää ennalleen
+4. Vastaus ikkuna jää ennalleen
+5. Analyytikka ikkuna jää ennalleen.
+6. cancel button ja sen ominaisuudet jää
+
+1.1 Kun sovellus käynnistetään, se kysyy ensin, kenen agentin kanssa keskustellaan (radio button)
+1.2 Kun käyttäjä on valinnut agentin seuraava asia dialogissa on, valitse uusi keskustelu tai jatka vanhaa keskustelua.
+1.2.1 Kun valittuna uusi keskustelu, käyttäjän on pakko antaa aihe. Kun aihe annettu, käyttäjä pääsee kirjoittamaan promptia.
+1.2.2 Kun valittuna valitse vanha keskustelu, käyttäjä näkee näkymässä kaikki valitun agentin tietokannassa olevat aiheet.
+1.2.2.1 Kun käyttäjä klikkaa aiheen auki, hän näkee pätkän keskustelusta. Klikkaamalla jotain keskustelua, tämä keskustelun agentin vastaus lähetetään käyttäjän promptilla varustettuna agentille.
+1.2.2.2 Mikäli keskustelua halutaan jatkaa, otetaan edellinen promptin vastaus käyttäjän tekemään promptiin ja lähetetään agentille.
+2.1 Sovelluksessa on historia painike.
+2.1.1 Historia valikossa näkyy kaikki keskustelun aiheet valitulle agentille. Huom, ennen historia näkymää, valitaan agentti.
+2.1.2 Historia näkymässä voidaan poistaa kaikki keskustelut valitusta aiheesta.
+2.1.3 Sovellus päivittää näkymän poiston jälkeen
+3.1 Kun keskustelu näkymässä ollaan oli se sitten uusi keskustelu tai vanha, voidaan valita radio buttonista agentti.
+3.1.1 Kun agentti valitsinta muutetaan, se palaa näkymään, jossa käyttäjän pitää valita uusi keskustelu (käyttäjä antaa aiheen) tai jatkaa vanhaa.
+4.1 Sovellukseen tulee myös koodi ikkuna näkymään, jossa käyttäjä voi syöttää promptin. Tämä siis käsitellään backendissä siten, ettei se riko jsonia
+
+
+Ui näkymät.
+
+Dialogi 1: Agentin valinta, aukee kaikkien päälle.
+dialogi 2: kun agentti valittu, käyttäjä voi antaa keskustelun aiheen ja painaa ok tai valita vanha keskustelu.
+sovelluksen UI. Kun valittiin uusi keskustelu, näkyy se otsikkona omassa ikkuassaan. Käyttäjä näkee siis prompt input kentän, koodi blokin, lähetä prompti napin,
+ja peruuta napin. Kun prompt on lähetetty, käyttäjä näkee scrollattavassa ikkunassa agentin vastauksen ja analyytikka datan (aukee napista dialog 6). Myös 
+sovelluksestä löytyy historia nappi ja agentin valitsin radio button. Agentin valitsin nappi ohjaa takaisin dialog 2 näkymään, jossa käyttäjä voi valita uuden tai vanhan keskustelun.
+
+dialogi 3. Sovelluksen UI historia nappi vie tähän näkymään. Tästä käyttäjä pääsee tarkistelemaan valitun agentin keskustelun aiheita
+dialog 4. Kun aihe valittu, pääsee käyttäjä selaamaan sen valitun aiheen kaikkia keskusteluja. Hän voi valita siis mitä keskustelua jatkaa klikkaamalla sitä ja painamalla ok.
+Tällöin käyttäjä ohjataan takaisin sovelluksen UI:hin ja valittu vastaus lähteen käyttäjän uuden promptin kanssa agentille.
+
+Historia ominaisuus:
+
+Kun käyttäjä valitsee dialogissa 2 jatkaa vanhaa keskustelua,  hänet ohjataan dialogi3 näkymään, josta valitaan vanha aihe.
+sitten kun aihetta on klikattu, aukee dialogi 4 josta voidaan valita taas tietty keskustelu, jota käyttäjä haluaa jatkaa.
+
+Dialogi 3 on myös nappi, josta voidaan valita, minka aiheen perässä olevat keskustelut poistetaan.
+
+dialogi 5 on poisto näkymä, jossa näkyy valitun agentin kaikki keskustelun aiheet ja käyttäjä voi klikata jonkin halutun keskustelun aktiiviseksi ja painaa poista nappia. 
+Dialogi 5 ohjataan käyttäjä takaisin sovelluksen alkunäkymään dialogi 1.
+
+Dialogi 6. Kun sovelluksen UI:ssa on painettu nappia analytics, se aukee omaan ikkunaan eli dialogi 6 josta käyttäjä voi tarkistella analyytikka dataa agentin vastauksesta. Tässä näkymässä on palaa nappi, josta voidaan palata sovelluksen UI:hin.
+
+
+Ui tarkennukset joka näkymässä:
+
+Dialog 1. Teksti ikkuna jossa teksti valitse agentti. Agentit valitaan radio buttonista.
+
+Dialog 2. aukeaa kun agentti valittu. Tässä näkymässä on siis input kenttä, jonka otsikko on anna uusi keskustelu aihe tai valitse vanha keskustelu ja ok painike, jolla kuitataan valinta.
+
+Dialog 3. tässä näkymässä valitun agentin kaikki keskustelun aiheet näkyy listana. Listalta voidaan valita keskustelu ja painaa ok nappia. Tässä on myös poista keskustelu nappi.
+
+Dialog 4. Kun keskustelun aihe on halutulta agentilta valittu, päästään selaamaan keskusteluja jotka näkyy listassa. Listassa näkyy noin 10 sanaa per vastaus ja käyttäjän prompt. Käyttäjä valitsee klikkaamalla halutun yksittäisen keskustelun ja painaa ok nappia.
+
+dialogi 5. Poisto näkymässä listataan siis listaan keskustelun aiheet valitulta agentilta. Aihetta klikataan ja painetaan poista nappia.
+
+Dialogi 6. Tämä sisältää teksti kentän, jossa tulostettuna analyytikkadata. Tästä näkymästä pääsee pois back napilla.
+
+sovelluksen UI: Kun käyttäjä on päätynyt sovelluksen UI näkymään joko uuden tai vanhan keskustelun kautta. Sielä ylimpänä on uusi tai valittu aihe. Sitten on input kenttä, johon voi käyttäjä kirjoittaa promptin.
+Sitten näkymässä on code ikkuna, johon käyttäjä voi laittaa koodin halutessaan. Sitten on lähetä prompt painike, peruuta painike. Sitten on agentin vastaus teksti kenttä, johon vastaus tulostetaan agentin vastattua.
+Täältä löyty myös analytics nappi historia nappi ja radio button agentin valitsemiseen ja myös exit painike.
