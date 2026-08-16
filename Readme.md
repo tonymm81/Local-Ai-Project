@@ -146,4 +146,81 @@ usr/bin/ollama_watchdog.py
 
 /opt/admin_reset/ admin_reset.py
 
+Computer specs:
+  Host: tonymm81-MS-7680 Kernel: 7.0.0-28-generic arch: x86_64 bits: 64 compiler: gcc v: 13.3.0
+    clocksource: tsc
+  Console: pty pts/0 DM: LightDM v: 1.30.0 Distro: Linux Mint 22.2 Zara base: Ubuntu 24.04 noble
+Machine:
+  Type: Desktop Mobo: MSI model: Z87-G45 GAMING (MS-7821) v: 1.0 serial: <superuser required>
+    uuid: <superuser required> BIOS: American Megatrends v: 1.9 date: 07/21/2014
+CPU:
+  Info: quad core model: Intel Core i5-4670K bits: 64 type: MCP smt: <unsupported> arch: Haswell
+    rev: 3 cache: L1: 256 KiB L2: 1024 KiB L3: 6 MiB
+  Speed (MHz): avg: 928 high: 1315 min/max: 800/3800 cores: 1: 1315 2: 800 3: 800 4: 800
+    bogomips: 27197
+  Flags: avx avx2 ht lm nx pae sse sse2 sse3 sse4_1 sse4_2 ssse3 vmx
+Graphics:
+  Device-1: NVIDIA GP104 [GeForce GTX 1070] vendor: ASUSTeK driver: nvidia v: 580.173.02
+    arch: Pascal pcie: speed: 2.5 GT/s lanes: 16 ports: active: none empty: DP-1, DP-2, DVI-D-1,
+    HDMI-A-1, HDMI-A-2 bus-ID: 01:00.0 chip-ID: 10de:1b81 class-ID: 0300
+  Display: server: X.org v: 1.21.1.11 with: Xwayland v: 23.2.6 driver: X: loaded: nvidia
+    unloaded: fbdev,modesetting,nouveau,vesa gpu: nvidia tty: 317x85
+  API: EGL v: 1.5 hw: drv: nvidia platforms: device: 0 drv: nvidia device: 2 drv: swrast
+    surfaceless: drv: nvidia inactive: gbm,wayland,x11,device-1
+  API: OpenGL v: 4.6.0 compat-v: 4.5 vendor: mesa v: 25.2.8-0ubuntu0.24.04.2
+    note: console (EGL sourced) renderer: NVIDIA GeForce GTX 1070/PCIe/SSE2, llvmpipe (LLVM 20.1.2
+    256 bits)
+Audio:
+  Device-1: Intel 8 Series/C220 Series High Definition Audio vendor: Micro-Star MSI 8
+    driver: snd_hda_intel v: kernel bus-ID: 00:1b.0 chip-ID: 8086:8c20 class-ID: 0403
+  Device-2: NVIDIA GP104 High Definition Audio vendor: ASUSTeK driver: snd_hda_intel v: kernel
+    pcie: speed: 8 GT/s lanes: 16 bus-ID: 01:00.1 chip-ID: 10de:10f0 class-ID: 0403
+  API: ALSA v: k7.0.0-28-generic status: kernel-api
+  Server-1: PipeWire v: 1.0.5 status: active with: 1: pipewire-pulse status: active
+    2: wireplumber status: active 3: pipewire-alsa type: plugin
+Network:
+  Device-1: Qualcomm Atheros Killer E220x Gigabit Ethernet vendor: Micro-Star MSI driver: alx
+    v: kernel pcie: speed: 2.5 GT/s lanes: 1 port: d000 bus-ID: 03:00.0 chip-ID: 1969:e091
+    class-ID: 0200
+  IF: enp3s0 state: down mac: 44:8a:5b:2b:91:3c
+  Device-2: ASUSTek N10 Nano 802.11n Network Adapter [Realtek RTL8192CU] driver: rtl8192cu
+    type: USB rev: 2.0 speed: 480 Mb/s lanes: 1 bus-ID: 1-5:2 chip-ID: 0b05:17ba class-ID: 0000
+    serial: 00e04c000001
+  IF: wlxf832e4b4ddd6 state: up mac: f8:32:e4:b4:dd:d6
+  IF-ID-1: br-02dd4899dbd1 state: up speed: 10000 Mbps duplex: unknown mac: ce:22:fc:22:1e:d6
+  IF-ID-2: br-2b4be5318cbe state: up speed: 10000 Mbps duplex: unknown mac: 42:8f:7b:b6:45:e1
+  IF-ID-3: br-6289f567e166 state: down mac: 6a:c1:f9:b3:81:43
+  IF-ID-4: br-ef2ab5352d99 state: up speed: 10000 Mbps duplex: unknown mac: be:8c:bc:bb:2e:4a
+  IF-ID-5: br-f5ab522285f8 state: up speed: 10000 Mbps duplex: unknown mac: b6:1b:2a:7d:5e:44
+  IF-ID-6: br-f745061caf2d state: down mac: ea:1f:22:4f:68:67
+  IF-ID-7: docker0 state: down mac: e6:97:4d:cb:ec:12
+  IF-ID-8: veth0b4c33a state: up speed: 10000 Mbps duplex: full mac: 5e:62:19:5f:0d:a0
+  IF-ID-9: veth5c0acbd state: up speed: 10000 Mbps duplex: full mac: 4e:61:ce:d9:28:5e
+  IF-ID-10: veth826d3ff state: up speed: 10000 Mbps duplex: full mac: da:0e:2e:31:64:7a
+  IF-ID-11: veth89c4550 state: up speed: 10000 Mbps duplex: full mac: 8e:eb:71:53:b2:a1
+  IF-ID-12: veth8c3861c state: up speed: 10000 Mbps duplex: full mac: 7a:e5:12:06:56:89
+  IF-ID-13: vethab4d383 state: up speed: 10000 Mbps duplex: full mac: 72:ab:9b:21:ae:41
+  IF-ID-14: vethb048929 state: up speed: 10000 Mbps duplex: full mac: 5a:79:f4:28:86:57
+  IF-ID-15: vethf27c208 state: up speed: 10000 Mbps duplex: full mac: ea:2a:4d:4a:3e:bc
+Drives:
+  Local Storage: total: 909.18 GiB used: 130.43 GiB (14.3%)
+  ID-1: /dev/sda vendor: Kingston model: SA400S37240G size: 223.57 GiB speed: 6.0 Gb/s tech: SSD
+    serial: 50026B7380D1E56A fw-rev: 0100 scheme: GPT
+  ID-2: /dev/sdb vendor: Kingston model: SKC400S37256G size: 238.47 GiB speed: 6.0 Gb/s
+    tech: SSD serial: 50026B767600EB68 fw-rev: 001B scheme: GPT
+  ID-3: /dev/sdc vendor: Kingston model: SA400S37480G size: 447.13 GiB speed: 6.0 Gb/s tech: SSD
+    serial: 50026B77820285C3 fw-rev: 71F1 scheme: GPT
+Partition:
+  ID-1: / size: 218.51 GiB used: 72.37 GiB (33.1%) fs: ext4 dev: /dev/sda3
+  ID-2: /boot/efi size: 512 MiB used: 4 KiB (0.0%) fs: vfat dev: /dev/sda2
+Swap:
+  ID-1: swap-1 type: file size: 3.82 GiB used: 0 KiB (0.0%) priority: -1 file: /swapfile
+Sensors:
+  System Temperatures: cpu: 26.0 C mobo: N/A gpu: nvidia temp: 27 C
+  Fan Speeds (rpm): N/A
+Info:
+  Memory: total: 12 GiB available: 11.62 GiB used: 1.22 GiB (10.5%)
+  Processes: 234 Power: uptime: 3m states: freeze,mem,disk suspend: deep wakeups: 0
+    hibernate: platform Init: systemd v: 255 target: graphical (5) default: graphical
+  Packages: pm: dpkg pkgs: 2088 Compilers: gcc: 13.3.0 Shell: Bash v: 5.2.21
 
