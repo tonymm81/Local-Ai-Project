@@ -92,12 +92,12 @@
 
 ##### bug and plans
 
-- Earlier agent answer is staying in agent responce window and it should be removed, when chancing the new agent.
-- Perhaps I just add clear conversation history button, what removes the old answers
+- Option 1. Earlier agent answer is staying in agent responce window and it should be removed, when chancing the new agent.
+- option 2. Perhaps I just add clear conversation history button, what removes the old answers
 - Perhaps I need text formatter to agents answer. (the old text formatted did not work so good)
-- wholse ui is freezing when it is waiting agent answer and also that why the cancel button wont work.
-- When Iam selecting the old conversation, it returns to prompt window but there should be something, what tells to agent that this was the earlier answer.
-- Promt input field should be also scroll window like code block is now.
+- wholse ui is freezing when it is waiting agent answer and also that why the cancel button wont work. (Fixed on version 112)
+- When Iam selecting the old conversation, it returns to prompt window but there should be something, what tells to agent that this was the earlier answer. (fixed on version 112)
+- Promt input field should be also scroll window like code block is now. (Fixed on version 112)
 
 
 #### plan 01
@@ -107,6 +107,12 @@
 
 #### plan 02
 - Lets build a feature, that you can see the chat history in client app also.
+
+### Version 112
+- Now the ui is not freesing, when agent is generating answer. User can now reset the agent via cancel/abort button, what reset the docker containers and proxy servers in ai server.
+- I also add automatic docker container resetting, when application time out is going over. In old version application just finished waiting and agent was still generating the answer and I have to reset agent via manually in server.
+
+- User promt input is now scoll input field.
 
 
 

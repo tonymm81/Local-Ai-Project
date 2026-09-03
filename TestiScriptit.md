@@ -17,7 +17,7 @@ sudo journalctl -u admin_reset.service -n 50 --no-pager
 sudo journalctl -u ollama-proxy.service -n 50 --no-pager
 
 ## admin_reset
-/Opt/admin_reset/admin_re
+/Opt/admin_reset/admin_reset
 
 sudo journalctl -u ollama-proxy.service -n 200 --no-pager
 # proxy main log
