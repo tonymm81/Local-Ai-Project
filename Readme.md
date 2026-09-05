@@ -6,6 +6,17 @@
 
 - Goal of this project is inspect, how ai actually work. I have build the analytics data base to linux server
 
+### explain for github files:
+
+Folders AgentDev, AgentOllamaDeepseek and agentQwen is in linux server inside of docker containers. This code is communicating to database and agent runtime.
+
+Files Ollama_Proxy_main.py , Ollama_Proxy_ndjson_parser.py and ollama_watchdog.py is communicating between ui and server and agents.
+.sh and .service files are also in linux server. This mostly handles the agent resetting and other stuff.
+
+There is also couple of pdf, what explain this functionalies more clear.
+
+Desktopapp folder is windows app, where user can communicate to chosen agent.
+
 ### Version 100
 
 - Agent is cvommunicating to me now trough api requestes and next step is to build up the phone application and desktop application. I build the analytics around the ai agent, so that data also is needed to handle some how.
