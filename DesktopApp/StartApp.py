@@ -15,6 +15,8 @@ from dialogs.new_or_old_dialog import NewOrOldDialog
 import os
 import traceback
 
+from Formatters.TextFormatter import format_for_ui
+
 from api.client import ApiClient
 from data.server_repo import ServerRepository
 from current_agent_store import CurrentAgentStore
@@ -172,6 +174,7 @@ class App:
         tb.Button(action_frame, text="Send Prompt", bootstyle="success", command=self.send_prompt).pack(side="left")
         self.cancel_button = tb.Button(action_frame, text="Cancel", bootstyle="secondary", command=self.send_reset_request)
         self.cancel_button.pack(side="left")
+        tb.Button(action_frame, text="Clear Response", bootstyle="warning", command=self.clear_response_area).pack(side="left")
             # Response area
         resp_label = tk.Label(self.root, text="Agent response", bg=DARK_BG, fg=DARK_FG)
         resp_label.pack(anchor="w", padx=8)
@@ -212,8 +215,11 @@ class App:
                 self.prompt_entry.delete(0, "end")
             except Exception:
                 pass
-                 # version 112
-
+                # version 112
+    def clear_response_area(self):
+        self.response_area.config(state="normal")
+        self.response_area.delete("1.0", "end")
+        self.response_area.config(state="disabled")
     # Dialog 1 / 2
     def show_agent_dialog_startup(self):
         # AgentDialogin tulee palauttaa agentin avain (esim. "ollama-qwen")
@@ -261,9 +267,6 @@ class App:
         else:
             return
 
-        
-    def update_main_title(self):
-        self.title_label.config(text=f"{self.agent} — {self.topic}")
 
     # Dialog 3 / 4 History
     def show_history(self):
@@ -332,11 +335,13 @@ class App:
             self.update_main_title()
             # Prefill prompt with a clear restored marker + previous agent answer.
             restored_text = chosen.get("response", "") or ""
+            restored_text = format_for_ui(restored_text)
             marker = "[RESTORED: previous agent answer]\n\n"
+            new_prompt_marker = "[USER NEW PROMPT BELOW]\n\n"
             try:
                 # If prompt_entry is ScrolledText (multiline)
                 self.prompt_entry.delete("1.0", "end")
-                self.prompt_entry.insert("1.0", marker + restored_text + "\n\n")
+                self.prompt_entry.insert("1.0", marker + restored_text + "\n\n" + new_prompt_marker)
             except Exception:
                 # Fallback for single-line Entry
                 try:
@@ -498,56 +503,12 @@ class App:
 
                 self.response_area.after(0, reset_ui_after_send)
         threading.Thread(target=task, daemon=True).start()
-        """def task():
-            try:
-                msg = self.current_store.save_prompt_to_server(self.topic, combined, model, user_id="tester")
-                # Jos peruutus on asetettu resetin kautta, älä päivitä UI:ta
-                if getattr(self, "_cancel_event", None) is not None and self._cancel_event.is_set():
-                    print("send_prompt: request completed but was cancelled; ignoring result")
-                    return
-                self.response_area.after(0, lambda: self._display_response(msg.response_text or str(msg)))
-                self.last_request_id = getattr(self.repo.api, "last_request_id", None)
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-                if getattr(self, "_cancel_event", None) is not None and self._cancel_event.is_set():
-                    return
-                self.response_area.after(0, lambda: messagebox.showerror("API error", f"Failed to send prompt: {e}"))
-            finally:
-                # generointi päättynyt — nollaa tila ja palauta nappi
-                def reset_ui_after_send():
-                    try:
-                        self.cancel_button.config(text="Cancel", bootstyle="secondary", command=self.cancel_prompt, state="normal")
-                    except Exception:
-                        pass
-                    self._generation_running = False
-                    self._cancel_event = None
-                    self._generation_running = False #version 112
-                    self._cancel_event = None#version 112
-                    # Clear restored marker state if present
-                    self._restored_flag = False#version 112
-                self._restored_conversation_id = None#version 112
-                    
-                self.response_area.after(0, reset_ui_after_send)
-
-        threading.Thread(target=task, daemon=True).start()"""
-
-
-
-    def _simulate_send(self, payload):
-        # Show payload in console for debugging
-        print("Payload to send:", json.dumps(payload))
-        time.sleep(1.5)  # simulate network
-        # Dummy response
-        resp = "Agent reply to: " + (payload["prompt"][:120].replace("\n"," "))
-        # Append to dummy history
-        AGENTS[self.agent]["topics"].setdefault(self.topic, []).append({"prompt":payload["prompt"], "response":resp})
-        # Update UI in main thread
-        self.root.after(0, lambda: self._display_response(resp))
+       
 
     def _display_response(self, resp):
+        formatted = format_for_ui(resp)
         self.response_area.config(state="normal")
-        self.response_area.insert("end", "\n\n" + resp + "\n")
+        self.response_area.insert("end", "\n\n" + formatted + "\n")
         self.response_area.config(state="disabled")
 
     def cancel_prompt(self):
@@ -631,19 +592,6 @@ class App:
         except Exception:
             # varmistus: jos response_area ei ole käytettävissä, tulosta konsoliin
             print(text)
-
-        
-    def cancel_reset_request(self):
-        """Merkitse käynnissä oleva pyyntö peruutetuksi ja päivitä UI."""
-        if getattr(self, "_cancel_event", None) is None:
-            return
-        self._cancel_event.set()
-        self._append_response_text("Canceling...")
-        try:
-            self.cancel_button.config(state="disabled")
-        except Exception:
-            pass
-        # Jos haluat myös sulkea session-objektin, lisää logiikkaa täällä (esim. self._session.close())
 
 
 if __name__ == "__main__":
