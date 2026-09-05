@@ -81,7 +81,7 @@ def send_prompt():
     try:
         payload = build_payload(agent, selected_model, user_prompt)
     except Exception as e:
-        update_result(f"Payload build failed: {e}")
+        update_result(f"Payload build failed: {e}") 
         return
 
     update_result("Waiting for response...")

@@ -3,6 +3,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from .endpoints import generate_url, list_conversations_url, get_messages_url, delete_conversation_url, stats_url, request_details_url
+import os
 
 DEFAULT_TIMEOUT = 620  # sekunteina
 
@@ -15,6 +16,27 @@ class ApiClient:
         s.mount("https://", HTTPAdapter(max_retries=retries))
         self.session = s
 
+    def _attempt_reset(self):# version 112 update. Lets reset agents automaticly, if time out is triggering
+        """
+        Lähettää reset POSTin API_URL:iin. Käytetään automaattisesti
+        generate()-virhetilanteissa (timeout, 5xx yms.).
+        Tämä ei nosta poikkeuksia eteenpäin, vain kirjaa mahdolliset virheet.
+        """
+        try:
+            api_url = os.getenv("API_URL", "http://192.168.68.204:5001/admin/reset")
+            api_key = os.getenv("API_KEY", "ThisIsThePassw0rd!")  # tyhjä jos ei asetettu
+            headers = {"x-api-key": api_key} if api_key else {}
+            # lyhyt timeout resetille, älä jää odottamaan liian pitkään
+            r = requests.post(api_url, headers=headers, timeout=10)
+            try:
+                body = r.text
+            except Exception:
+                body = "<no body>"
+            print(f"DEBUG: attempted reset -> status {r.status_code}, body: {body}")
+        except Exception as exc:
+            print(f"DEBUG: reset attempt failed: {exc}")
+
+
     def generate(self, agent: str, prompt: str, model: str, conversation_title: str, user_id: str = None,):
         url = generate_url()
         payload = {
@@ -26,13 +48,23 @@ class ApiClient:
         }
         if user_id:
             payload["user_id"] = user_id
-        resp = self.session.post(url, json=payload, timeout=self.timeout)
-        resp.raise_for_status()
-        data = resp.json()
-        print("DEBUG PROXY RESPONSE:", data)
-        self.last_request_id = data.get("request_id")
-        #return resp.json()
-        return data
+
+        try:
+            resp = self.session.post(url, json=payload, timeout=self.timeout)
+            resp.raise_for_status()
+            data = resp.json()
+            print("DEBUG PROXY RESPONSE:", data)
+            self.last_request_id = data.get("request_id")
+            return data
+        except requests.exceptions.RequestException as req_exc: # Adding the automatic reset, if post failed in version 112
+            # Kun pyyntö epäonnistuu (timeout, 502, 503, 504, yms.), yritetään automaattinen reset
+            print(f"DEBUG: generate request failed: {req_exc}; attempting automatic reset.")
+            try:
+                self._attempt_reset()
+            except Exception:
+                pass
+            # Heitetään alkuperäinen poikkeus eteenpäin kutsujalle
+            raise
     
     def list_conversations(self, agent: str, limit: int = 100, offset: int = 0):
         url = list_conversations_url(agent, limit, offset)

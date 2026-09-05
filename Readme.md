@@ -85,19 +85,65 @@
 - For now ui let user to select existing conversation and pick the answer to continue the conversation.
 - Tested with all different agents. Deleting the conversation is also working. Agent response to app.
 
-### version 111
-- DeskTopApp is deprecated and not working any more.
-- I will merge this branch, because new features is working now and there is only small changes, what needs to be done.
-- Repairing the analytics view
+### Version 111
 
-##### bug and plans
+- The `DeskTopApp.py` has been deprecated and is no longer functional.
 
-- Earlier agent answer is staying in agent responce window and it should be removed, when chancing the new agent.
-- Perhaps I just add clear conversation history button, what removes the old answers
-- Perhaps I need text formatter to agents answer. (the old text formatted did not work so good)
-- wholse ui is freezing when it is waiting agent answer and also that why the cancel button wont work.
-- When Iam selecting the old conversation, it returns to prompt window but there should be something, what tells to agent that this was the earlier answer.
-- Promt input field should be also scroll window like code block is now.
+- I will merge this branch as new features are working now, with only minor changes required.
+
+- The analytics view will be repaired.
+
+### Version 112
+
+- The UI no longer freezes when the agent is generating an answer.
+
+Users can now reset the agent via a cancel/abort button, which resets the Docker containers and proxy servers on the AI server.
+
+- I've also added automatic resetting of Docker containers when the application times out.
+
+In previous versions, the application would simply finish waiting, but the agent would still be generating an answer, requiring manual intervention to reset the agent.
+
+- The user's prompt input is now displayed in a scrollable text field.
+
+- A text formatter has been created for the agent’s answers.
+
+Additionally, this formatter works when users want to continue an existing conversation.
+
+It ensures that only the UI text is formatted, helping to prevent unnecessary growth of the agent's answer character size in the database.
+
+- I've added a button to clear the response window.
+
+- Some duplicate functions and old demo functions have been cleaned up.
+
+Please test this version and merge the branch into main.
+
+
+##### Bugs and Plans (Version 111-112)
+
+- **Option 1:** Earlier agent answers should be removed from the response window when switching to a new agent.
+
+- **Option 2:** Added a "Clear Conversation History" button to remove old answers.
+
+This functionality was fixed in version 112.
+
+- **Option 3:** Implemented text formatting for agents' answers to improve readability (the previous formatting did not work well).
+
+Fixed in version 112.
+
+- **UI Issue:** The UI freezes when waiting for an agent's answer, which also prevents the cancel button from working.
+
+This issue was fixed in version 112.
+
+- **Conversation Selection Issue:** When selecting an old conversation, it returns to the prompt window.
+
+There should be a clear indicator that this is the previous response.
+
+Fixed in version 112.
+
+- **Prompt Input Field:** Added scroll functionality to the prompt input field like the code block now does.
+
+Fixed in version 112.
+
 
 
 #### plan 01
@@ -106,8 +152,7 @@
 - Also watchdog.py we should consider, that how we get alarm to client app from this.
 
 #### plan 02
-- Lets build a feature, that you can see the chat history in client app also.
-
+- Lets build a feature, that you can see the chat history in client app also. (created in version 111,112)
 
 
 ## ai project pixatrail folder path

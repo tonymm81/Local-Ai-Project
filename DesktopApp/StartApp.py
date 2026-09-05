@@ -13,7 +13,9 @@ from dialogs.delete_dialog import DeleteDialog
 from dialogs.history_dialog import HistoryDialog
 from dialogs.new_or_old_dialog import NewOrOldDialog
 import os
+import traceback
 
+from Formatters.TextFormatter import format_for_ui
 
 from api.client import ApiClient
 from data.server_repo import ServerRepository
@@ -84,6 +86,8 @@ class App:
         self.repo = ServerRepository(api_client)
         self.current_store = CurrentAgentStore(self.repo)
         # UI rakentaminen pysyy samana
+        self._restored_flag = False#version 112
+        self._restored_conversation_id = None#version 112
         self.build_main_ui()
         # Käynnistä agentin valinta kuten ennen
         self.show_agent_dialog_startup()
@@ -112,7 +116,7 @@ class App:
         self.current_agent = None
         # Esimerkki UI‑tyhjennyksestä (sovita omaan UI:hin)
         try:
-            self.prompt_entry.delete(0, "end")
+            self.clear_prompt_text()#version 112 changes
         except Exception:
             pass
         self.update_main_title()
@@ -146,11 +150,16 @@ class App:
         tb.Button(btn_frame, text="Analytics", bootstyle="secondary", command=self.show_analytics).pack(side="left")
         tb.Button(btn_frame, text="Exit", bootstyle="danger", command=self.root.quit).pack(side="right")
 
-            # Prompt input (tb.Entry tai ttk.Entry)
-        self.prompt_entry = tb.Entry(self.root, bootstyle="dark")
-        self.prompt_entry.pack(fill="x", padx=8, pady=6)
-        self.prompt_entry.insert(0, "Write your prompt here...")
+        # Prompt input (multiline, scrollable) version 112
+        prompt_label = tk.Label(self.root, text="Prompt (you can write long text)", bg=DARK_BG, fg=DARK_FG)
+        prompt_label.pack(anchor="w", padx=8)
 
+        # Use ScrolledText so long prompts are visible and scrollable
+        self.prompt_entry = scrolledtext.ScrolledText(self.root, height=4, bg=DARK_PANEL, fg=DARK_FG, insertbackground=DARK_FG, wrap="word")
+        self.prompt_entry.pack(fill="both", padx=8, pady=6, expand=False)
+        # Optional lightweight placeholder: insert initial text and tag it so user can clear if they focus
+        self.prompt_entry.insert("1.0", "Write your prompt here...")
+        #version 112 end here
             # Code editor label
         code_label = tk.Label(self.root, text="Code block (optional)", bg=DARK_BG, fg=DARK_FG)
         code_label.pack(anchor="w", padx=8)
@@ -163,8 +172,9 @@ class App:
         action_frame = tk.Frame(self.root, bg=DARK_BG)
         action_frame.pack(fill="x", padx=8, pady=4)
         tb.Button(action_frame, text="Send Prompt", bootstyle="success", command=self.send_prompt).pack(side="left")
-        self.cancel_button = tb.Button(action_frame, text="Cancel", bootstyle="secondary", command=self.cancel_prompt)
+        self.cancel_button = tb.Button(action_frame, text="Cancel", bootstyle="secondary", command=self.send_reset_request)
         self.cancel_button.pack(side="left")
+        tb.Button(action_frame, text="Clear Response", bootstyle="warning", command=self.clear_response_area).pack(side="left")
             # Response area
         resp_label = tk.Label(self.root, text="Agent response", bg=DARK_BG, fg=DARK_FG)
         resp_label.pack(anchor="w", padx=8)
@@ -172,6 +182,44 @@ class App:
                                                         bg=DARK_PANEL, fg=DARK_FG, insertbackground=DARK_FG)
         self.response_area.pack(fill="both", padx=8, pady=4, expand=True)
 
+
+    def get_prompt_text(self) -> str: # version 112
+        """Return trimmed prompt text from the scrollable prompt widget."""
+        try:
+            return self.prompt_entry.get("1.0", "end").strip()
+        except Exception:
+            # fallback if widget type changes
+            try:
+                return self.prompt_entry.get().strip()
+            except Exception:
+                return ""
+
+    def set_prompt_text(self, text: str):
+        """Set prompt text (replace existing)."""
+        try:
+            self.prompt_entry.delete("1.0", "end")
+            self.prompt_entry.insert("1.0", text)
+        except Exception:
+            try:
+                self.prompt_entry.delete(0, "end")
+                self.prompt_entry.insert(0, text)
+            except Exception:
+                pass
+
+    def clear_prompt_text(self):
+        """Clear prompt widget content."""
+        try:
+            self.prompt_entry.delete("1.0", "end")
+        except Exception:
+            try:
+                self.prompt_entry.delete(0, "end")
+            except Exception:
+                pass
+                # version 112
+    def clear_response_area(self):
+        self.response_area.config(state="normal")
+        self.response_area.delete("1.0", "end")
+        self.response_area.config(state="disabled")
     # Dialog 1 / 2
     def show_agent_dialog_startup(self):
         # AgentDialogin tulee palauttaa agentin avain (esim. "ollama-qwen")
@@ -219,9 +267,6 @@ class App:
         else:
             return
 
-        
-    def update_main_title(self):
-        self.title_label.config(text=f"{self.agent} — {self.topic}")
 
     # Dialog 3 / 4 History
     def show_history(self):
@@ -285,11 +330,29 @@ class App:
         print("DEBUG convs:", convs)  # varmista mitä dialogille annetaan
         dlg = ConversationListDialog(self.root, agent_name=self.agent, topic=topic, conversations=convs, theme_dark=True)
         chosen = dlg.show()
-        if chosen:
+        if chosen: #version 112
             self.topic = topic
             self.update_main_title()
-            self.prompt_entry.delete(0, "end")
-            self.prompt_entry.insert(0, chosen.get("response", ""))
+            # Prefill prompt with a clear restored marker + previous agent answer.
+            restored_text = chosen.get("response", "") or ""
+            restored_text = format_for_ui(restored_text)
+            marker = "[RESTORED: previous agent answer]\n\n"
+            new_prompt_marker = "[USER NEW PROMPT BELOW]\n\n"
+            try:
+                # If prompt_entry is ScrolledText (multiline)
+                self.prompt_entry.delete("1.0", "end")
+                self.prompt_entry.insert("1.0", marker + restored_text + "\n\n" + new_prompt_marker)
+            except Exception:
+                # Fallback for single-line Entry
+                try:
+                    self.prompt_entry.delete(0, "end")
+                    self.prompt_entry.insert(0, marker + restored_text)
+                except Exception:
+                    pass
+            # Mark internal state so UI/logic can know this was a restored conversation
+            self._restored_flag = True
+            self._restored_conversation_id = chosen.get("conversation_id")
+
 
 
     # Dialog 5 Delete
@@ -350,11 +413,13 @@ class App:
         AnalyticsView(self.root, analytics_text="\n".join(text))
 
     # Send prompt (combine prompt + code into single prompt string)
-    def send_prompt(self):
+    
+
+    def send_prompt(self): # version 112
         if not self.agent or not self.topic:
             messagebox.showinfo("Info", "Select agent and topic first")
             return
-        prompt = self.prompt_entry.get().strip()
+        prompt = self.get_prompt_text()#version 112
         code = self.code_text.get("1.0", "end").rstrip()
         combined = prompt
         if code:
@@ -365,88 +430,157 @@ class App:
             messagebox.showerror("Error", "No model configured for this agent")
             return
 
-        try:
-            msg = self.current_store.save_prompt_to_server(self.topic, combined, model, user_id="tester")
-            self._display_response(msg.response_text or str(msg))
-            self.last_request_id = self.repo.api.last_request_id
-        except Exception as e:
-            messagebox.showerror("API error", f"Failed to send prompt: {e}")
+        if getattr(self, "_generation_running", False):
+            self._append_response_text("A request is already running. Press Cancel/Abort to stop it first.")
+            return
 
-    def _simulate_send(self, payload):
-        # Show payload in console for debugging
-        print("Payload to send:", json.dumps(payload))
-        time.sleep(1.5)  # simulate network
-        # Dummy response
-        resp = "Agent reply to: " + (payload["prompt"][:120].replace("\n"," "))
-        # Append to dummy history
-        AGENTS[self.agent]["topics"].setdefault(self.topic, []).append({"prompt":payload["prompt"], "response":resp})
-        # Update UI in main thread
-        self.root.after(0, lambda: self._display_response(resp))
+        # Merkkaa että generointi alkaa
+        self._generation_running = True
+        # Käytetään erillistä eventia reset/abort -logiikkaan
+        self._cancel_event = None
+
+        # Vaihda nappi peruutusmoodiin — Cancel painaa nyt cancel_prompt
+        try:
+            self.cancel_button.config(text="Abort", bootstyle="danger", command=self.send_reset_request, state="normal")
+        except Exception:
+            pass
+
+        self._append_response_text("Sending prompt...")
+
+        def task():
+            try:
+                msg = self.current_store.save_prompt_to_server(self.topic, combined, model, user_id="tester")
+                # Jos peruutus on asetettu resetin kautta, älä päivitä UI:ta
+                if getattr(self, "_cancel_event", None) is not None and self._cancel_event.is_set():
+                    print("send_prompt: request completed but was cancelled; ignoring result")
+                    return
+
+                # msg voi olla dict tai olio; etsitään järkevä teksti
+                try:
+                    if isinstance(msg, dict):
+                        resp_text = msg.get("response_text") or msg.get("text") or msg.get("response") or msg.get("content") or str(msg)
+                    else:
+                        resp_text = getattr(msg, "response_text", None) or str(msg)
+                except Exception:
+                    resp_text = str(msg)
+
+                # Päivitä UI pääsäikeessä
+                self.response_area.after(0, lambda: self._display_response(resp_text))
+                self.last_request_id = getattr(self.repo.api, "last_request_id", None)
+
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+
+                # Jos käyttäjä on peruutuspyynnön aikana, älä näytä virheilmoitusta
+                if getattr(self, "_cancel_event", None) is not None and self._cancel_event.is_set():
+                    self.response_area.after(0, lambda: self._append_response_text("Request was cancelled during reset."))
+                    return
+
+                # Muodosta virheteksti heti ja sido se callbackiin
+                err_text = f"Failed to send prompt: {e}"
+                try:
+                    import functools
+                    self.response_area.after(0, functools.partial(messagebox.showerror, "API error", err_text))
+                except Exception:
+                    self.response_area.after(0, lambda: messagebox.showerror("API error", err_text))
+
+                # Lisää virhe myös response_area:han
+                self.response_area.after(0, lambda: self._append_response_text(err_text))
+
+            finally:
+                # generointi päättynyt — nollaa tila ja palauta nappi
+                def reset_ui_after_send():
+                    try:
+                        self.cancel_button.config(text="Cancel", bootstyle="secondary", command=self.cancel_prompt, state="normal")
+                    except Exception:
+                        pass
+                    self._generation_running = False
+                    self._cancel_event = None
+                    # Clear restored marker state if present
+                    self._restored_flag = False
+                    self._restored_conversation_id = None
+
+                self.response_area.after(0, reset_ui_after_send)
+        threading.Thread(target=task, daemon=True).start()
+       
 
     def _display_response(self, resp):
+        formatted = format_for_ui(resp)
         self.response_area.config(state="normal")
-        self.response_area.insert("end", "\n\n" + resp + "\n")
+        self.response_area.insert("end", "\n\n" + formatted + "\n")
         self.response_area.config(state="disabled")
 
     def cancel_prompt(self):
         """
-        Aloittaa reset/administratiivisen pyynnön tai peruuttaa sen, riippuen tilasta.
-        Ensimmäinen painallus aloittaa pyynnön; napin teksti vaihtuu Abortiksi.
-        Toinen painallus peruuttaa pyynnön.
+        Säilytetään API: käyttäjä painaa Cancel/Abort -> aina send_reset_request.
         """
-        # Jos ei käynnissä olevaa pyyntöä, aloitetaan uusi
-        if getattr(self, "_cancel_event", None) is None:
-            key = API_KEY or self.prompt_entry.get().strip()
-            if not key:
-                self._append_response_text("No API key set.")
-                return
+        # Jos reset on jo käynnissä, ilmoitetaan; muuten käynnistetään reset
+        if getattr(self, "_cancel_event", None) is not None:
+            self._append_response_text("Reset already in progress.")
+            return
+        self.send_reset_request()
 
-            self._cancel_event = threading.Event()
 
-            # Vaihda nappi peruutusmoodiin
+    def send_reset_request(self, timeout: int = 60):
+        """
+        Lähettää reset POSTin API_URL:iin. Kutsutaan aina kun käyttäjä painaa Cancel/Abort.
+        Ei yritetä peruuttaa tätä kutsua paikallisesti — se on "kovaresetti".
+        """
+        # Jos reset on jo käynnissä, ilmoitetaan ja ei käynnistetä uutta
+        if getattr(self, "_cancel_event", None) is not None:
+            self._append_response_text("Reset already in progress.")
+            return
+
+        # Merkitään reset käynnissä olevaksi
+        self._cancel_event = threading.Event()
+
+        # Vaihdetaan nappi visuaalisesti Abort-tilaan (komento peruuttaa resetin ei ole tarpeen)
+        try:
+            self.cancel_button.config(text="Abort", bootstyle="danger", command=self.send_reset_request, state="normal")
+        except Exception:
+            pass
+
+        self._append_response_text("Sending reset request...")
+
+        def _reset_worker():
+            session = requests.Session()
+            text = None
             try:
-                self.cancel_button.config(text="Abort", bootstyle="danger", command=self.cancel_reset_request, state="normal")
-            except Exception:
-                pass
-
-            self._append_response_text("Sending reset request...")
-
-            def do_request():
-                session = requests.Session()
+                key = API_KEY or self.get_prompt_text()
+                resp = session.post(API_URL, headers={"x-api-key": key}, timeout=timeout)
+                # Näytetään aina palvelimen vastaus (status + body) jotta käyttäjä näkee tuloksen
+                text = f"Reset response: {resp.status_code} - {resp.text}"
+            except Exception as e:
+                # Jos jokin menee pieleen, näytetään virhe
+                text = f"Reset request failed: {e}"
+            finally:
                 try:
-                    # Jos haluat sovelluksen odottavan pitkään, käytä isoa timeoutia tai poista timeout.
-                    # Esimerkki: timeout=600 (10 min)
-                    resp = session.post(API_URL, headers={"x-api-key": key}, timeout=600)
-                    if self._cancel_event.is_set():
-                        text = "Request canceled by user."
-                    else:
-                        text = f"Status: {resp.status_code}\nResponse: {resp.text}"
-                except Exception as e:
-                    if getattr(self, "_cancel_event", None) is not None and self._cancel_event.is_set():
-                        text = "Request canceled."
-                    else:
-                        text = f"Request failed: {e}"
-                finally:
+                    session.close()
+                except Exception:
+                    pass
+                # Päivitetään UI pääsäikeessä
+                try:
+                    self.response_area.after(0, lambda: self._append_response_text(text))
+                except Exception:
+                    print("Failed to append response text:", text)
+                # Palautetaan nappi takaisin Cancel-tilaan
+                def _reset_ui():
                     try:
-                        session.close()
+                        self.cancel_button.config(text="Cancel", bootstyle="secondary", command=self.send_reset_request, state="normal")
                     except Exception:
                         pass
-                    # Päivitä UI pääsäikeessä
-                    self.response_area.after(0, lambda: self._append_response_text(text))
-                    # Palauta nappi alkuperäiseen tilaan
-                    def reset_button():
-                        try:
-                            self.cancel_button.config(text="Cancel", bootstyle="secondary", command=self.cancel_prompt, state="normal")
-                        except Exception:
-                            pass
-                        self._cancel_event = None
-                    self.response_area.after(0, reset_button)
+                    # Merkitään reset päättyneeksi
+                    self._cancel_event = None
+                try:
+                    self.response_area.after(0, _reset_ui)
+                except Exception:
+                    _reset_ui()
 
-            threading.Thread(target=do_request, daemon=True).start()
+        threading.Thread(target=_reset_worker, daemon=True).start()
 
-        else:
-            # Jos pyyntö on käynnissä ja käyttäjä painaa samaa nappia, kutsutaan peruutusta
-            self.cancel_reset_request()
+
+    
 
     def _append_response_text(self, text: str):
         """Lisää tekstiä response_area:han turvallisesti pääsäikeessä."""
@@ -459,18 +593,6 @@ class App:
             # varmistus: jos response_area ei ole käytettävissä, tulosta konsoliin
             print(text)
 
-        
-    def cancel_reset_request(self):
-        """Merkitse käynnissä oleva pyyntö peruutetuksi ja päivitä UI."""
-        if getattr(self, "_cancel_event", None) is None:
-            return
-        self._cancel_event.set()
-        self._append_response_text("Canceling...")
-        try:
-            # estä napin uudelleenpainallus
-            self.cancel_button.config(state="disabled")
-        except Exception:
-            pass
 
 if __name__ == "__main__":
     root = tb.Window(themename="darkly")  # valitse esim. "darkly", "cyborg"
