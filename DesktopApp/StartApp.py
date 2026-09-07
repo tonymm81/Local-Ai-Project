@@ -26,6 +26,7 @@ import threading
 BASE_URL = "http://192.168.68.204:8080"
 
 API_URL = os.getenv("API_URL", "http://192.168.68.204:5001/admin/reset")
+#Shutdown_URL = os.getenv("Shutdown_URL", "http://192.168.68.204:5001/admin/ShutDown")
 API_KEY = os.getenv("API_KEY", "ThisIsThePassw0rd!") # tyhjä jos ei asetettu
 
 #api_client = ApiClient(timeout=15)
@@ -149,6 +150,8 @@ class App:
         tb.Button(btn_frame, text="History", bootstyle="secondary", command=self.show_history).pack(side="left")
         tb.Button(btn_frame, text="Analytics", bootstyle="secondary", command=self.show_analytics).pack(side="left")
         tb.Button(btn_frame, text="Exit", bootstyle="danger", command=self.root.quit).pack(side="right")
+        tb.Button(btn_frame, text="Shutdown Server", bootstyle="danger", command=self.send_shutdown_request).pack(side="right")#version 113
+        tb.Button(btn_frame, text="Update & Upgrade", bootstyle="warning", command=self.send_update_upgrade_request).pack(side="right")#version 113
 
         # Prompt input (multiline, scrollable) version 112
         prompt_label = tk.Label(self.root, text="Prompt (you can write long text)", bg=DARK_BG, fg=DARK_FG)
@@ -579,8 +582,23 @@ class App:
 
         threading.Thread(target=_reset_worker, daemon=True).start()
 
+    def send_shutdown_request(self):#version 113
+        try:
+            key = API_KEY or self.get_prompt_text()
+            resp = requests.post("http://192.168.68.204:5001/admin/ShutDown", headers={"x-api-key": key}, timeout=30)
+            self._append_response_text(f"Shutdown response: {resp.status_code} - {resp.text}")
+        except Exception as e:
+            self._append_response_text(f"Shutdown failed: {e}")
 
-    
+
+    def send_update_upgrade_request(self):#version 113
+        try:
+            key = API_KEY or self.get_prompt_text()
+            resp = requests.post("http://192.168.68.204:5001/admin/update_upgrade", headers={"x-api-key": key}, timeout=30)
+            self._append_response_text(f"Update+Upgrade response: {resp.status_code} - {resp.text}")
+        except Exception as e:
+            self._append_response_text(f"Update+Upgrade failed: {e}")
+
 
     def _append_response_text(self, text: str):
         """Lisää tekstiä response_area:han turvallisesti pääsäikeessä."""

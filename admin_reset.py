@@ -5,6 +5,7 @@ import time
 from fastapi import FastAPI, Header, HTTPException, status, BackgroundTasks, Request
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
+import json 
 
 app = FastAPI()
 API_KEY = os.environ.get("API_KEY", "")
@@ -77,5 +78,54 @@ async def admin_reset(request: Request, background_tasks: BackgroundTasks, x_api
 
     future = executor.submit(run_reset_script, 60)
     future.add_done_callback(on_done)
+
+    return {"status": "accepted", "request_id": request_id}
+
+
+@app.post("/admin/ShutDown")#version 113
+async def shut_down(request: Request, background_tasks: BackgroundTasks, x_api_key: str = Header(None)):
+    client_ip = request.client.host if request.client else "unknown"
+    check_api_key(x_api_key)
+    now = time.time()
+    request_id = str(int(now * 1000))
+    try:
+        subprocess.call("sudo shutdown -h now", shell=True)
+        return {"status": "accepted", "request_id": request_id}
+    except Exception as e:
+        logger.error(f"Error, happend when tryiong to shut down: {e}")
+        raise HTTPException(status_code=500, detail="shutdown failed")
+
+
+@app.post("/admin/update_upgrade")  # version 113
+async def update_upgrade(request: Request, background_tasks: BackgroundTasks, x_api_key: str = Header(None)):
+    check_api_key(x_api_key)
+
+    now = time.time()
+    request_id = str(int(now * 1000))
+    client_ip = request.client.host if request.client else "unknown"
+
+    logger.info("Update+Upgrade requested id=%s from=%s", request_id, client_ip)
+    append_log(f"{now} UPDATE+UPGRADE requested id={request_id} from={client_ip}")
+
+    def run_update():
+        try:
+            # Aja skripti ja tallenna tulos
+            proc = subprocess.run(
+                ["sudo", "/usr/local/bin/update_upgrade.sh"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+
+            append_log(
+                f"UPDATE+UPGRADE id={request_id} rc={proc.returncode}\n"
+                f"STDOUT:\n{proc.stdout}\n"
+                f"STDERR:\n{proc.stderr}"
+            )
+
+        except Exception as e:
+            append_log(f"UPDATE+UPGRADE id={request_id} exec error: {e}")
+
+    background_tasks.add_task(run_update)
 
     return {"status": "accepted", "request_id": request_id}
