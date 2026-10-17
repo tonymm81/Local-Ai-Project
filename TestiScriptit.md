@@ -41,7 +41,7 @@ htop
 
 - Ollama 8080 ja resetointipalveli 5001
 
-## Python venv
+## Python venv for start the client app
 
 - python -m venv .venv
 
@@ -89,3 +89,181 @@ curl -sS "http://127.0.0.1:8080/proxy/pixatrail/conversations/Aamurutiini%3F/mes
 curl -v -X DELETE "http://127.0.0.1:8080/proxy/pixatrail/conversations/Aamurutiini%3F"
 
 
+### summary feature in version 114 testing:
+
+- example body for summarise lmm model answer with qwen:
+To clarify:
+
+- **Summary Format**:
+
+Yes, you can receive the summary in JSON format for better organization.
+
+- **Example Response**:
+
+```json
+{
+    "summary":
+
+[
+        "AI project",
+        "summarization feature",
+        "pixatrail answer",
+        "prompt response",
+        "keyword extraction",
+        "10 keywords",
+        "next prompt",
+        "project continuation",
+        "information organization",
+        "JSON format"
+    ]
+}
+```
+- This is tested and it work quite good:
+
+Prompt:
+summarise the content inside the code block.
+
+Produce ONLY the following fields:
+
+user_intent: a short summary (max 10 words) of the user's question
+llm_summary: a short summary (max 10 words) of the model's answer
+
+Do not repeat the input.
+Do not reconstruct the input structure.
+Do not include any other fields.
+Do not echo the code block.
+Output must be valid JSON with exactly these two fields.
+
+Json input:
+{
+  "task": {
+    "instruction": "Generate two summaries: (1) user_intent: summarize the user's question in max 10 words. (2) llm_summary: summarize the model's answer in max 10 words. Do not repeat or quote the input."
+  },
+  "input": {
+    "user_prompt": "Miksi TypeScriptin tyypitys on hyödyllistä?",
+    "llm_response": "TypeScriptin tyypitys tuo useita konkreettisia etuja kehitykseen..."
+  },
+  "meta": {
+    "req_id": "12345",
+    "conversation_title": "typescript_types",
+    "model": "qwen2.5",
+    "notes": "Separate intent and semantic summaries to avoid echoing."
+  }
+}
+Result Example qwen llm model answer for this:
+
+```json
+{
+  "user_intent":
+
+"Miksi TypeScriptin tyypitys on hyödyllistä?",
+  "llm_summary":
+
+"TypeScriptin tyypitys tarjoaa monia hyötyjä koodin kehityksessä."
+}
+```
+
+Same prompt but different summarize json:
+
+{
+  "task": {
+    "instruction": "Generate two summaries: (1) user_intent: summarize the user's question in max 10 words. (2) llm_summary: summarize the model's answer in max 10 words. Do not repeat or quote the input."
+  },
+  "input": {
+    "user_prompt": "What is the practical difference between defining a global TypeScript interface that is available across the entire project versus defining local interfaces inside React components or modules? How do these approaches affect maintainability, type reuse, code clarity, and potential naming conflicts when scaling a large application?",
+    "llm_response": "Global TypeScript interfaces provide shared, reusable type definitions that help maintain consistency across the entire codebase, but they can introduce naming collisions and make dependencies less explicit. Local interfaces inside React components or modules improve encapsulation, reduce accidental coupling, and make component boundaries clearer, but they may lead to duplicated types and slightly more boilerplate when multiple components need similar structures."
+  },
+  "meta": {
+    "req_id": "98765",
+    "conversation_title": "ts_global_vs_local_interfaces",
+    "model": "qwen2.5",
+    "notes": "Long-form prompt and answer for summarization testing."
+  }
+}
+
+- qwen lmm model answer:
+{
+  "user_intent":
+
+"Difference between global and local TypeScript interfaces.",
+  "llm_summary":
+
+"Global interfaces offer reuse, maintain consistency;
+
+locals improve encapsulation, reduce conflicts."
+}
+
+Same prompt but different summarize json with lots of special characters:
+
+{
+  "task": {
+    "instruction": "Generate two summaries: (1) user_intent: summarize the user's question in max 10 words. (2) llm_summary: summarize the model's answer in max 10 words. Do not repeat or quote the input."
+  },
+  "input": {
+    "user_prompt": "What is the practical difference between using global TypeScript interfaces shared across the whole project and defining local, component-specific interfaces inside React files? How do these choices impact reusability, refactoring, naming collisions, and clarity when the codebase grows and different teams touch the same types?",
+    "llm_response": "1. Global interfaces:\n   - ✅ Reusable across many modules\n   - ✅ Centralised type definitions\n   - ❌ Higher risk of naming collisions\n   - ❌ Hidden dependencies between components\n\n2. Local interfaces in React components:\n   - ✅ Better encapsulation of component contracts\n   - ✅ Clear, explicit dependencies per file\n   - ✅ Easier to refactor in isolation\n   - ❌ Possible duplication of similar shapes\n\n### Example\n```ts\ninterface GlobalUser {\n  id: string;\n  name: string;\n}\n\ninterface LocalUserProps {\n  user: GlobalUser;\n}\n```\n🚀 In practice: use global interfaces for truly shared domain models, and local interfaces for UI‑specific props and internal structures to keep boundaries clean."
+  },
+  "meta": {
+    "req_id": "ts-echo-stress-001",
+    "conversation_title": "ts_global_vs_local_interfaces_stress_test",
+    "model": "qwen2.5",
+    "notes": "Deliberately messy Ollama-style response with lists, markdown, code and emoji to test echo behaviour."
+  }
+}
+- qwen lmm model answer:
+{
+  "user_intent":
+
+"Difference between global vs local TypeScript interfaces.",
+  "llm_summary":
+
+"Global:
+
+reusable, risk of collisions;
+
+Local:
+
+encapsulated, easier refactoring."
+}
+
+### Example summarize database tables:
+
+CREATE TABLE IF NOT EXISTS summaries (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  prompt_id INT NOT NULL,
+  user_intent VARCHAR(255),
+  llm_summary VARCHAR(255),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (prompt_id) REFERENCES prompts(id)
+);
+
+- summarised prompt (only 3-5 latest is added to new prompt):
+
+Here is a short summary of the previous conversation:
+
+1. User intent: Asked about TS interfaces
+   Assistant summary: Global reusable; local encapsulated
+
+2. User intent: Asked about naming collisions
+   Assistant summary: Global types risk collisions; locals avoid them
+
+3. User intent: Asked about refactoring
+   Assistant summary: Local types easier to refactor
+
+Now the user asks:
+"How should I organize shared types in a large monorepo?"
+
+- This test gives a valid output so we can continue to develop the summarize features to ai project.
+
+### next step to do:
+
+- This test shows that qwen gives the answer without any echo and it also noticed the earlier conversation summary. Now we have to build this feature to proxy server and create new table to mariadb sql. 
+
+- This feature is builded to all llm models.
+- We should add logging to summarize feature, becase we cannot 100% trust that ollama qwen ia giving valid json output for proxy server.
+
+- We have to use 3 latest summaries when continuing the conversation. If some of summarys failed, then the conversation is still with history and not broke, because one of summaries has failded.
+
+- We need to clean the existing feature from ui to continue the conversation. Now it use the earlier answer for prompt and we cannnot use it anyway se removing this feature in next version.
+
+- Ui have to wait until llm model is generated the answer and the summarize is complete in local ai server.

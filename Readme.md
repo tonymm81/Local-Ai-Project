@@ -177,7 +177,8 @@ Fixed in version 112.
 
 Fixed in version 112.
 
-
+### version 114
+- Planning and testing the new feature
 
 #### plan 01
 - Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt.
