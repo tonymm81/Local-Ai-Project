@@ -59,7 +59,7 @@ async def generate(req: GenReq):
     payload = {
         "model": req.model,
         "prompt": req.prompt,
-        "stream": True
+        "stream": False
     }
 
     full_text = ""

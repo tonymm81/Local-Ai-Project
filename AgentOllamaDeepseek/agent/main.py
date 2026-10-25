@@ -53,7 +53,7 @@ async def generate(req: GenRequest, authorization: str | None = Header(None)):
     payload = {
         "model": req.model,
         "prompt": req.prompt,
-        "stream": True
+        "stream": False
     }
 
     full_text = ""

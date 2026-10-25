@@ -179,7 +179,13 @@ Fixed in version 112.
 
 ### version 114
 - Planning and testing the new feature.
-- Ja jep, päästiin ikivirheeseen ja keskustelussa kohtaan Ydinratkaisu (mitä tehdä koodissa)
+- This new summarize feature is working quite well so I megre the branch.
+- Everytime, when user creates a new conversation to ai agent, when ai agent answer, the user prompt and ai agent answer will be summarized with qwen agent and save it to sql.
+When user continues the conversation, the proxyserver get from sql 3 latest summaries to that conversation title, what user continues. This is adding the "memory" for conversations.
+
+This feature needs to test widely. Some cases the qwen agent is echoing mut I add some text cleaning in proxy server.
+
+
 
 #### plan 01
 - Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt.

@@ -430,7 +430,7 @@ async def analytics_summaries_by_title(conversation_title: str, limit: int = 50)
     }
 
 
-async def run_summary(prompt, llm_response, req_id, conversation_title, model, prompt_id):  # Version 114
+async def run_summary(prompt, llm_response, req_id, conversation_title, model, prompt_id):  # Version 114 Ja tässä on nyt paljon vikaa
     """
     Generate a short summary using Qwen agent.
     Returns dict or None.
@@ -445,25 +445,31 @@ async def run_summary(prompt, llm_response, req_id, conversation_title, model, p
         if s is None:
             return ""
         s = str(s)
-        return re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F]', '', s)
+        # remove BOM if present
+        if s.startswith("\ufeff"):
+            s = s.lstrip("\ufeff")
+        # remove control chars except newline/tab
+        s = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F]', '', s)
+        return s
 
     prompt = sanitize_for_json(prompt)
     llm_response = sanitize_for_json(llm_response)
 
     # 1) Älä yritä summarya jos ei ole mitään tiivistettävää
     if not llm_response or not str(llm_response).strip():
-        logger.info(f"No llm_response to summarize for req_id={req_id} conversation_title={conversation_title}")
+        # Pretty JSON log
+        try:
+            logger.info(json.dumps({
+                "event": "no_llm_response",
+                "req_id": req_id,
+                "conversation_title": conversation_title
+            }, ensure_ascii=False, indent=2))
+        except Exception:
+            logger.info("No llm_response to summarize for req_id=%s conversation_title=%s", req_id, conversation_title)
         return None
 
     # 2) Rakenna summary payload (sisältö säilyy ennallaan)
     summary_payload = {
-        "task": {
-            "instruction": (
-                "Generate two summaries: (1) user_intent: summarize the user's question in max 10 words. "
-                "(2) llm_summary: summarize the model's answer in max 10 words. "
-                "Do not repeat or quote the input."
-            )
-        },
         "input": {
             "user_prompt": prompt,
             "llm_response": llm_response
@@ -471,7 +477,7 @@ async def run_summary(prompt, llm_response, req_id, conversation_title, model, p
         "meta": {
             "req_id": req_id,
             "conversation_title": conversation_title,
-            "model": model,
+            "model": "qwen2.5:7b",
             "notes": "Separate intent and semantic summaries to avoid echoing."
         }
     }
@@ -500,39 +506,136 @@ async def run_summary(prompt, llm_response, req_id, conversation_title, model, p
             # IMPORTANT: send composed_prompt as a string in top-level prompt
             "prompt": composed_prompt,
             "stream": False,
-            "model": model,
+            "model": "qwen2.5:7b",
             "conversation_title": conversation_title,
             "req_id": req_id
         }
 
         # Pieni preview lokiin (ei koko payloadia jos iso)
         try:
-            preview = post_body["prompt"][:1000]
+            preview = post_body["prompt"]
         except Exception:
             preview = "<could not preview prompt>"
 
-        logger.info(f"run_summary sending to upstream req_id={req_id} prompt_preview={preview!r} model={model}")
+        # Pretty JSON log of the outgoing request (post_body pretty-printed)
+        try:
+            logger.info(json.dumps({
+                "event": "run_summary_sending",
+                "req_id": req_id,
+                "model": model,
+                "post_body": post_body  # pretty-printed by json.dumps below
+            }, ensure_ascii=False, indent=2))
+        except Exception:
+            # fallback to parameterized log if json.dumps fails for some reason
+            logger.info("run_summary sending to upstream req_id=%s model=%s prompt_preview=%s", req_id, model, preview)
 
         async with httpx.AsyncClient(timeout=180.0) as client:
+            # Use json= to ensure proper serialization and escaping
             resp = await client.post(AGENT_URLS["ollama-qwen"] + "/generate", json=post_body)
 
         # 4) Loggaa upstreamin vastaus (rajoitettu preview)
         try:
             resp_text = resp.text
         except Exception:
-            resp_text = (await resp.aread()).decode(errors="replace")
-
-        logger.info(f"run_summary upstream status={resp.status_code} req_id={req_id} body_preview={resp_text[:2000]!r}")
-
+            raw_bytes = await resp.aread()
+            # strip BOM if present in bytes
+            if raw_bytes.startswith(b'\xef\xbb\xbf'):
+                raw_bytes = raw_bytes.lstrip(b'\xef\xbb\xbf')
+            resp_text = raw_bytes.decode('utf-8', errors="replace")
+            # Pretty JSON log of upstream response (status + body)
+            try:
+                logger.info(json.dumps({
+                    "event": "run_summary_upstream_response_read_fallback",
+                    "status": resp.status_code,
+                    "req_id": req_id,
+                    "body": resp_text[:2000]
+                }, ensure_ascii=False, indent=2))
+            except Exception:
+                logger.info("run_summary upstream status=%s req_id=%s body_preview=%s", resp.status_code, req_id, resp_text[:2000])
+            
         if resp.status_code >= 400:
-            logger.error(f"Summary upstream error {resp.status_code} for req_id={req_id}")
+            try:
+                logger.error(json.dumps({
+                    "event": "summary_upstream_error",
+                    "status": resp.status_code,
+                    "req_id": req_id
+                }, ensure_ascii=False, indent=2))
+            except Exception:
+                logger.error("Summary upstream error %s for req_id=%s", resp.status_code, req_id)
             return None
 
-        # 5) Parsitaan JSON‑vastaus
+        # 5) Parsitaan JSON‑vastaus robustisti
+        data = None
+        # 5a) yritä suoraan
         try:
             data = resp.json()
-        except Exception as e:
-            logger.error(f"Summary parse error (top-level json): {repr(e)} resp_text_preview={resp_text[:2000]!r}")
+        except Exception as e_direct:
+            # yritetään fallbackeja
+            try:
+                # 1) jos NDJSON: parsea rivikohtaisesti ja ota ensimmäinen dict
+                lines = [l.strip() for l in resp_text.splitlines() if l.strip()]
+                parsed_lines = []
+                for line in lines:
+                    try:
+                        parsed_lines.append(json.loads(line))
+                    except Exception:
+                        # yritä etsiä JSON substring riviltä
+                        s = line
+                        start = s.find('{')
+                        end = s.rfind('}')
+                        if start != -1 and end != -1 and end > start:
+                            try:
+                                parsed_lines.append(json.loads(s[start:end+1]))
+                                continue
+                            except Exception:
+                                pass
+                        # ei JSON rivillä, jätä plain text
+                if parsed_lines:
+                    # ota ensimmäinen dict-objekti jos sellainen on
+                    for p in parsed_lines:
+                        if isinstance(p, dict):
+                            data = p
+                            break
+
+                # 2) jos ei vielä, yritä etsiä koko resp_textistä ensimmäinen JSON-objekti
+                if data is None:
+                    start = resp_text.find('{')
+                    end = resp_text.rfind('}')
+                    if start != -1 and end != -1 and end > start:
+                        candidate = resp_text[start:end+1]
+                        try:
+                            data = json.loads(candidate)
+                        except Exception:
+                            # 3) poista triple backticks ja yritä uudelleen
+                            tf = re.sub(r'^```(?:json)?\s*', '', resp_text, flags=re.IGNORECASE)
+                            tf = re.sub(r'\s*```$', '', tf, flags=re.IGNORECASE)
+                            tf = tf.strip()
+                            try:
+                                data = json.loads(tf)
+                            except Exception:
+                                data = None
+            except Exception as e_fallback:
+                try:
+                    logger.error(json.dumps({
+                        "event": "summary_parse_error_fallbacks",
+                        "error_direct": str(e_direct),
+                        "error_fallback": str(e_fallback),
+                        "req_id": req_id,
+                        "resp_text_snippet": resp_text[:2000]
+                    }, ensure_ascii=False, indent=2))
+                except Exception:
+                    logger.error("Summary parse fallbacks failed for req_id=%s: %s / %s", req_id, repr(e_direct), repr(e_fallback))
+
+        if data is None:
+            try:
+                logger.error(json.dumps({
+                    "event": "summary_parse_error_top_level_json",
+                    "error": "could not parse response as JSON",
+                    "resp_text_snippet": resp_text[:2000] if isinstance(resp_text, str) else None,
+                    "req_id": req_id
+                }, ensure_ascii=False, indent=2))
+            except Exception:
+                logger.error("Summary parse error (top-level json) for req_id=%s resp_text=%s", req_id, resp_text[:2000])
             return None
 
         # data voi olla:
@@ -588,7 +691,26 @@ async def run_summary(prompt, llm_response, req_id, conversation_title, model, p
 
         # Lopullinen validointi
         if not user_intent or not llm_summary:
-            logger.error(f"Summary JSON missing required fields after parsing. top_level_keys={list(data.keys())} parsed_user_intent={bool(user_intent)} parsed_llm_summary={bool(llm_summary)} resp_preview={resp_text[:2000]!r}")
+            # Pretty JSON log for missing fields with top-level keys and resp_text snippet
+            try:
+                logger.error(json.dumps({
+                    "event": "summary_missing_fields",
+                    "top_level_keys": list(data.keys()) if isinstance(data, dict) else None,
+                    "parsed_user_intent": bool(user_intent),
+                    "parsed_llm_summary": bool(llm_summary),
+                    "resp_text_snippet": resp_text[:2000] if isinstance(resp_text, str) else None,
+                    "req_id": req_id
+                }, ensure_ascii=False, indent=2))
+            except Exception:
+                logger.error(
+                    "Summary JSON missing required fields after parsing. top_level_keys=%s parsed_user_intent=%s parsed_llm_summary=%s resp_text=%s req_id=%s",
+                    list(data.keys()) if isinstance(data, dict) else None,
+                    bool(user_intent),
+                    bool(llm_summary),
+                    resp_text[:2000],
+                    req_id
+                )
+
             return None
 
         # 6) Tallenna summary proxyn kantaan viitaten paikalliseen prompt_id:hen
@@ -605,20 +727,49 @@ async def run_summary(prompt, llm_response, req_id, conversation_title, model, p
             await conn.commit()
             await cur.close()
             conn.close()
-            logger.info(f"Saved summary for prompt_id={prompt_id} req_id={req_id}")
+            # Pretty JSON log for successful save
+            try:
+                logger.info(json.dumps({
+                    "event": "saved_summary",
+                    "prompt_id": prompt_id,
+                    "req_id": req_id
+                }, ensure_ascii=False, indent=2))
+            except Exception:
+                logger.info("Saved summary for prompt_id=%s req_id=%s", prompt_id, req_id)
         except Exception as db_e:
-            logger.error(f"Failed to save summary for prompt_id={prompt_id}: {repr(db_e)}")
+            try:
+                logger.error(json.dumps({
+                    "event": "failed_save_summary",
+                    "prompt_id": prompt_id,
+                    "error": repr(db_e)
+                }, ensure_ascii=False, indent=2))
+            except Exception:
+                logger.error("Failed to save summary for prompt_id=%s: %s", prompt_id, repr(db_e))
             return {"user_intent": user_intent, "llm_summary": llm_summary}
 
         return {"user_intent": user_intent, "llm_summary": llm_summary}
 
     except asyncio.TimeoutError:
-        logger.error("Summary generation timed out (180s)")
+        try:
+            logger.error(json.dumps({
+                "event": "summary_timeout",
+                "timeout_seconds": 180
+            }, ensure_ascii=False, indent=2))
+        except Exception:
+            logger.error("Summary generation timed out (180s)")
         return None
 
     except Exception as e:
-        logger.error(f"Summary generation failed: {repr(e)}")
+        try:
+            logger.error(json.dumps({
+                "event": "summary_generation_failed",
+                "error": repr(e)
+            }, ensure_ascii=False, indent=2))
+        except Exception:
+            logger.error("Summary generation failed: %s", repr(e))
         return None
+
+
 
 async def build_summary_chain(conversation_title): #Version 114
     """
@@ -678,9 +829,11 @@ async def build_summary_chain(conversation_title): #Version 114
     )
 
     logger.info(
-        f"Summary chain built for conversation_title={conversation_title}: "
-        f"{len(parts)} items"
-    )
+            "Summary chain built for conversation_title=%s: %d items; chain=%s",
+            conversation_title,
+            len(parts),
+            repr(chain)
+        )
 
     return chain
 
