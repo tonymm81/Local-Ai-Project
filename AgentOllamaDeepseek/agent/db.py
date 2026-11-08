@@ -283,10 +283,10 @@ async def get_latest_conversation_by_title() -> Optional[Dict]:
     return await asyncio.to_thread(_query)
 
 
-async def delete_conversation_by_title(conversation_title: str) -> int:
+async def delete_conversation_by_title(conversation_title: str) -> int: # version 115 update
     """
-    Delete all rows that match the given conversation_title.
-    Returns the number of deleted rows.
+    Delete rows matching conversation_title. If exact match deletes 0 rows,
+    try a LIKE %conversation_title% fallback. Returns number of deleted rows.
     """
     if not conversation_title:
         raise ValueError("conversation_title is required")
@@ -296,13 +296,22 @@ async def delete_conversation_by_title(conversation_title: str) -> int:
         try:
             cnx = _get_conn()
             cur = cnx.cursor()
-            cur.execute("SELECT COUNT(*) FROM prompts WHERE conversation_title = %s", (conversation_title,))
-            cnt_row = cur.fetchone()
-            count_before = cnt_row[0] if cnt_row else 0
-            cur.execute("DELETE FROM prompts WHERE conversation_title = %s", (conversation_title,))
-            cnx.commit()
-            cur.close()
-            return count_before
+            try:
+                # 1) tarkka poisto
+                cur.execute("DELETE FROM prompts WHERE conversation_title = %s", (conversation_title,))
+                deleted = cur.rowcount
+                cnx.commit()
+
+                # 2) jos ei poistettu mitään, yritä LIKE-fallback
+                if deleted == 0:
+                    pattern = f"%{conversation_title}%"
+                    cur.execute("DELETE FROM prompts WHERE conversation_title LIKE %s", (pattern,))
+                    deleted = cur.rowcount
+                    cnx.commit()
+
+                return deleted
+            finally:
+                cur.close()
         finally:
             if cnx:
                 try:

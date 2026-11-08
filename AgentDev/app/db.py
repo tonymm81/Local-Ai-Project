@@ -177,20 +177,30 @@ async def get_latest_conversation_by_title() -> Optional[Dict]:
                 "last_updated": row[1]
             }
 
-async def delete_conversation_by_title(conversation_title: str) -> int:
+async def delete_conversation_by_title(conversation_title: str) -> int: #version 115
     """
     Delete all rows that match the given conversation_title.
+    If exact delete removes 0 rows, try a LIKE %conversation_title% fallback.
     Returns the number of deleted rows.
-    Deletion is by title as requested (no id-based delete function).
     """
     if not conversation_title:
         raise ValueError("conversation_title is required")
 
     async with aiosqlite.connect(DB_PATH) as db:
         await _set_wal(db)
-        async with db.execute("SELECT COUNT(*) FROM prompts WHERE conversation_title = ?", (conversation_title,)) as cur:
-            cnt_row = await cur.fetchone()
-            count_before = cnt_row[0] if cnt_row else 0
-        await db.execute("DELETE FROM prompts WHERE conversation_title = ?", (conversation_title,))
+
+        # 1) tarkka poisto
+        cur = await db.execute("DELETE FROM prompts WHERE conversation_title = ?", (conversation_title,))
         await db.commit()
-    return count_before
+        deleted = cur.rowcount or 0
+        await cur.close()
+
+        # 2) fallback: LIKE, jos ei poistettu mitään
+        if deleted == 0:
+            pattern = f"%{conversation_title}%"
+            cur2 = await db.execute("DELETE FROM prompts WHERE conversation_title LIKE ?", (pattern,))
+            await db.commit()
+            deleted = cur2.rowcount or 0
+            await cur2.close()
+
+    return deleted

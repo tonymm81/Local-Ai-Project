@@ -267,3 +267,35 @@ Now the user asks:
 - We need to clean the existing feature from ui to continue the conversation. Now it use the earlier answer for prompt and we cannnot use it anyway se removing this feature in next version.
 
 - Ui have to wait until llm model is generated the answer and the summarize is complete in local ai server.
+
+### Ollama pixatrail ja phi2 summary prompt test:
+
+#### Not working so well..
+{
+  "previous_conversation": [
+    {
+      "topic": "Discord bot",
+      "result": "Database issues resolved"
+    },
+    {
+      "topic": "Image generation",
+      "result": "Prompt testing completed"
+    },
+    {
+      "topic": "Agent routing",
+      "result": "Model evaluation completed"
+    }
+  ]
+}
+
+User:
+So do you recommend PostgreSQL or MariaDB for my project and why?
+
+#### quite good:
+Previous conversation:
+- Database issues resolved.
+- Prompt testing completed.
+- Model evaluation completed.
+
+User:
+So do you recommend PostgreSQL or MariaDB for my project and why?

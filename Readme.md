@@ -186,6 +186,12 @@ When user continues the conversation, the proxyserver get from sql 3 latest summ
 This feature needs to test widely. Some cases the qwen agent is echoing mut I add some text cleaning in proxy server.
 
 
+### version 115
+
+- When I tested the summarize feature, I noticed, that qwen is only agent, what works with that summarize body so I run some test and find almoust
+good version on summarize the conversation to pixatrail ja phi2. So I add logic to ollama_proxy_main.py file in build_summary function. Lets run more test and let see, how this is going to work.
+
+- So far change seems to be good but lets continue testing and let see how this is working
 
 #### plan 01
 - Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt.

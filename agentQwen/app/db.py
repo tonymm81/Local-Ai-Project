@@ -180,17 +180,54 @@ async def get_latest_conversation_by_title() -> Optional[Dict]:
 async def delete_conversation_by_title(conversation_title: str) -> int:
     """
     Delete all rows that match the given conversation_title.
+    If exact match count is 0, try a LIKE %conversation_title% fallback.
     Returns the number of deleted rows.
-    Deletion is by title as requested (no id-based delete function).
     """
     if not conversation_title:
         raise ValueError("conversation_title is required")
 
+    def normalize_title(s: str) -> str:
+        return " ".join(s.split())
+
+    def escape_like(s: str) -> str:
+        return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+    normalized = normalize_title(conversation_title)
+    pattern = f"%{escape_like(normalized)}%"
+
     async with aiosqlite.connect(DB_PATH) as db:
         await _set_wal(db)
-        async with db.execute("SELECT COUNT(*) FROM prompts WHERE conversation_title = ?", (conversation_title,)) as cur:
-            cnt_row = await cur.fetchone()
-            count_before = cnt_row[0] if cnt_row else 0
-        await db.execute("DELETE FROM prompts WHERE conversation_title = ?", (conversation_title,))
-        await db.commit()
-    return count_before
+
+        # 1) tarkka COUNT
+        async with db.execute(
+            "SELECT COUNT(*) FROM prompts WHERE conversation_title = ?",
+            (normalized,)
+        ) as cur:
+            cnt = await cur.fetchone()
+            count_exact = cnt[0] if cnt else 0
+
+        if count_exact > 0:
+            await db.execute(
+                "DELETE FROM prompts WHERE conversation_title = ?",
+                (normalized,)
+            )
+            await db.commit()
+            return count_exact
+
+        # 2) LIKE-fallback (ESCAPE '\')
+        async with db.execute(
+            "SELECT COUNT(*) FROM prompts WHERE conversation_title LIKE ? ESCAPE '\\'",
+            (pattern,)
+        ) as cur2:
+            cnt2 = await cur2.fetchone()
+            count_like = cnt2[0] if cnt2 else 0
+
+        if count_like > 0:
+            await db.execute(
+                "DELETE FROM prompts WHERE conversation_title LIKE ? ESCAPE '\\'",
+                (pattern,)
+            )
+            await db.commit()
+            return count_like
+
+    return 0

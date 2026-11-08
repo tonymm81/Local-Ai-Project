@@ -142,7 +142,11 @@ async def generate(request: Request):
     local_prompt_id = await save_prompt_local(conversation_title, prompt, model)
 
     # Build summary chain using conversation_title
-    summary_chain = await build_summary_chain(conversation_title)
+    summary_chain = await build_summary_chain(
+                                                conversation_title,
+                                                agent,
+                                                model
+                                            ) # version 115
 
     if summary_chain:
         # continuing conversation
@@ -771,12 +775,17 @@ async def run_summary(prompt, llm_response, req_id, conversation_title, model, p
 
 
 
-async def build_summary_chain(conversation_title): #Version 114
+async def build_summary_chain(conversation_title,  agent=None, model=None): #Version 115
     """
     Build a 3‑item summary chain for continuing conversations.
     Returns empty string if no summaries exist.
     """
-
+    logger.info(
+    "Building summary chain in version 115: agent=%s model=%s conversation=%s",
+    agent,
+    model,
+    conversation_title
+    )
     try:
         conn = await get_conn()
         cur = await conn.cursor()
@@ -804,6 +813,8 @@ async def build_summary_chain(conversation_title): #Version 114
         return ""
 
     parts = []
+    pixtral_parts = []
+    phi_parts = []
     for idx, (intent, summary) in enumerate(rows, start=1):
         # Defensive checks
         if not intent or not summary:
@@ -817,16 +828,41 @@ async def build_summary_chain(conversation_title): #Version 114
             f"{idx}. User intent: {intent}\n"
             f"   Assistant summary: {summary}\n"
         )
+        # Pixtral
+        pixtral_parts.append(
+            f"- {intent}: {summary}"
+        )
+
+        # Phi
+        phi_parts.append(
+            f"- {summary}"
+        )
 
     if not parts:
         logger.warning(f"Summary chain built no valid parts for conversation_title={conversation_title}")
         return ""
+    if agent == "ollama-qwen":
+        chain = (
+            "Here is a short summary of the previous conversation:\n\n"
+            + "\n".join(parts)
+            + "\n"
+        )
+    elif agent == "pixatrail":
 
-    chain = (
-        "Here is a short summary of the previous conversation:\n\n"
-        + "\n".join(parts)
-        + "\n"
-    )
+        chain = (
+            "Previous conversation:\n\n"
+            + "\n".join(pixtral_parts)
+            + "\n"
+        )
+
+    elif agent == "ollama-dev":
+
+        chain = (
+            "Previous conversation:\n\n"
+            + "\n".join(phi_parts)
+            + "\n"
+        )
+
 
     logger.info(
             "Summary chain built for conversation_title=%s: %d items; chain=%s",

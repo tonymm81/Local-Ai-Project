@@ -58,7 +58,7 @@ async def generate(req: GenReq):
         raise HTTPException(status_code=400, detail="conversation_title required")
 
     try:
-        async with httpx.AsyncClient(timeout=60.0) as c:
+        async with httpx.AsyncClient(timeout=600.0) as c:
             payload = {
                 "model": req.model or "qwen2.5:7b",
                 "messages": [
