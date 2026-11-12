@@ -21,6 +21,10 @@ from api.client import ApiClient
 from data.server_repo import ServerRepository
 from current_agent_store import CurrentAgentStore
 
+from common.logger import get_logger
+
+logger = get_logger(__name__)
+
 import requests
 import threading
 BASE_URL = "http://192.168.68.204:8080"
@@ -39,33 +43,6 @@ AGENT_DEFAULT_MODEL = {
     "ollama-qwen": "qwen2.5:7b"
 }
 # Dummy data
-AGENTS = {
-    "Agent Qwen": {
-        "topics": {
-            "Weather parsing": [
-                {"prompt":"How to parse temp?", "response":"Use sensor X..."},
-                {"prompt":"Fix MQTT reconnect", "response":"Add backoff..."}
-            ],
-            "Calibration": [
-                {"prompt":"Calibrate sensor", "response":"Do step A..."}
-            ]
-        }
-    },
-    "Agent Dev": {
-        "topics": {
-            "Deploy": [
-                {"prompt":"Deploy steps", "response":"Build, push..."}
-            ]
-        }
-    },
-    "Agent Pixatrail": {
-            "topics": {
-                "Deploy": [
-                    {"prompt":"Deploy steps", "response":"Build, push..."}
-                ]
-            }
-        }
-}
 
 
 
@@ -94,17 +71,17 @@ class App:
         self.show_agent_dialog_startup()
 
     def select_agent(self, agent_id: str):
-        print("select_agent called with:", agent_id)
+        logger.info("select_agent called with: %s", agent_id)# version 116
         self.clear_current_agent_data()
         try:
             agent_data = self.current_store.load_agent(agent_id)
-            print("loaded agent_data topics:", agent_data.topics)
+            logger.info("loaded agent_data topics:%s", agent_data.topics)# version 116
             self.agent = agent_id
             self.current_agent = agent_data
             self.update_main_title()
             self.refresh_topics_ui()
         except Exception as e:
-            print("select_agent error:", e)
+            logger.error("select_agent error:%s", e)#version 116
             messagebox.showerror("API error", f"Failed to load agent data: {e}")
             self.current_store.clear()
             self.agent = None
@@ -123,10 +100,19 @@ class App:
         self.update_main_title()
 
     # Esimerkkimetodi joka päivittää otsikon; säilytä oma toteutuksesi
-    def update_main_title(self):
-        title = f"{self.current_agent.display_name if getattr(self,'current_agent',None) else 'No agent selected'}"
-        # päivitä label tai window title
-        self.root.title(f"AI Agent App Prototype - {title}")
+    def update_main_title(self):#version 116
+        agent_name = (
+            self.current_agent.display_name
+            if getattr(self, "current_agent", None)
+            else "No agent"
+        )
+
+        topic_name = self.topic if self.topic else "No conversation selected"
+
+        self.root.title(
+            f"AI Agent App Prototype - {agent_name} - {topic_name}"
+        )
+        self.title_label.config(text=topic_name)
 
     def refresh_topics_ui(self):
         # Päivitä topic‑listaus UI:ssa käyttäen self.current_store.get_topics()
@@ -296,7 +282,7 @@ class App:
 
         try:
             raw = self.repo.get_messages(self.agent, topic)
-            print("DEBUG: repo.get_messages raw:", raw)  # poista debug myöhemmin
+            logger.debug("show conversations %s", raw)  #version 116
         except Exception as e:
             messagebox.showerror("API error", f"Failed to fetch messages: {e}")
             return
@@ -330,36 +316,24 @@ class App:
                 prompt, response = response, ""
             convs.append({"prompt": prompt, "response": response})
 
-        print("DEBUG convs:", convs)  # varmista mitä dialogille annetaan
+        logger.debug("show conversations %s", convs)  #version 116
         dlg = ConversationListDialog(self.root, agent_name=self.agent, topic=topic, conversations=convs, theme_dark=True)
         chosen = dlg.show()
-        if chosen: #version 112
+        if chosen:
             self.topic = topic
             self.update_main_title()
-            # Prefill prompt with a clear restored marker + previous agent answer.
+
             restored_text = chosen.get("response", "") or ""
             restored_text = format_for_ui(restored_text)
-            marker = "[RESTORED: previous agent answer]\n\n"
-            new_prompt_marker = "[USER NEW PROMPT BELOW]\n\n"
-            try:
-                # If prompt_entry is ScrolledText (multiline)
-                self.prompt_entry.delete("1.0", "end")
-                self.prompt_entry.insert("1.0", marker + restored_text + "\n\n" + new_prompt_marker)
-            except Exception:
-                # Fallback for single-line Entry
-                try:
-                    self.prompt_entry.delete(0, "end")
-                    self.prompt_entry.insert(0, marker + restored_text)
-                except Exception:
-                    pass
-            # Mark internal state so UI/logic can know this was a restored conversation
-            self._restored_flag = True
-            self._restored_conversation_id = chosen.get("conversation_id")
+
+            self.clear_response_area()
+            self._display_response(restored_text)
 
 
 
     # Dialog 5 Delete
     def show_delete_dialog(self, topic):
+        
         dlg = DeleteDialog(self.root, agent_name=self.agent, topic=topic, theme_dark=True)
         if not dlg.show():
             return
@@ -368,6 +342,7 @@ class App:
             ok = self.current_store.delete_conversation(topic)
         except Exception as e:
             messagebox.showerror("API error", f"Failed to delete: {e}")
+            logger.error("API returned status %s", e)#version 116
             return
 
         if ok:
@@ -385,8 +360,9 @@ class App:
                 try:
                     self.select_agent(self.agent)
                 except Exception as e:
-                    print("select_agent failed after delete:", e)
-
+                    
+                    logger.error("API returned status %s", e)#version 116
+        
 
 
     # Dialog 6 Analytics
@@ -395,8 +371,15 @@ class App:
             AnalyticsView(self.root, analytics_text="No analytics available yet.")
             return
 
-        stats = self.repo.api.get_stats()
-        req = self.repo.api.get_request_details(self.last_request_id)
+        #stats = self.repo.api.get_stats()
+        # req = self.repo.api.get_request_details(self.last_request_id)
+        stats = self.repo.api.get_stats()#version 116
+        req = self.repo.api.get_request_details(self.last_request_id) #version 116
+        summaries = self.repo.get_summaries(
+                                            self.topic,
+                                            limit=3
+                                        )#version 116
+
 
         text = []
         text.append("=== Global Stats ===")
@@ -413,7 +396,26 @@ class App:
         text.append(f"Tokens: {summary.get('tokens')}")
         text.append("")
 
-        AnalyticsView(self.root, analytics_text="\n".join(text))
+        text.append("")#version 116
+        text.append("=== Conversation Summaries ===")
+
+        for s in summaries.get("summaries", []):
+            text.append("")
+            text.append(
+                f"Intent: {s.get('user_intent')}"
+            )
+
+            text.append(
+                f"Summary: {s.get('llm_summary')}"
+            )
+
+            text.append(
+                f"Created: {s.get('created_at')}"
+            )#version 116
+        AnalyticsView(
+                        self.root,
+                        analytics_text="\n".join(text)
+                        )#version 116
 
     # Send prompt (combine prompt + code into single prompt string)
     
@@ -446,6 +448,7 @@ class App:
         try:
             self.cancel_button.config(text="Abort", bootstyle="danger", command=self.send_reset_request, state="normal")
         except Exception:
+            logger.error("Excpption")#version 116
             pass
 
         self._append_response_text("Sending prompt...")
@@ -455,7 +458,7 @@ class App:
                 msg = self.current_store.save_prompt_to_server(self.topic, combined, model, user_id="tester")
                 # Jos peruutus on asetettu resetin kautta, älä päivitä UI:ta
                 if getattr(self, "_cancel_event", None) is not None and self._cancel_event.is_set():
-                    print("send_prompt: request completed but was cancelled; ignoring result")
+                    logger.debug("send_prompt: request completed but was cancelled; ignoring result")
                     return
 
                 # msg voi olla dict tai olio; etsitään järkevä teksti
@@ -464,8 +467,9 @@ class App:
                         resp_text = msg.get("response_text") or msg.get("text") or msg.get("response") or msg.get("content") or str(msg)
                     else:
                         resp_text = getattr(msg, "response_text", None) or str(msg)
-                except Exception:
+                except Exception as e:
                     resp_text = str(msg)
+                    logger.error("Excpption %s", e)#version 116
 
                 # Päivitä UI pääsäikeessä
                 self.response_area.after(0, lambda: self._display_response(resp_text))
@@ -474,6 +478,7 @@ class App:
             except Exception as e:
                 import traceback
                 traceback.print_exc()
+                logger.error("Excpption %s", e)#version 116
 
                 # Jos käyttäjä on peruutuspyynnön aikana, älä näytä virheilmoitusta
                 if getattr(self, "_cancel_event", None) is not None and self._cancel_event.is_set():
@@ -487,6 +492,7 @@ class App:
                     self.response_area.after(0, functools.partial(messagebox.showerror, "API error", err_text))
                 except Exception:
                     self.response_area.after(0, lambda: messagebox.showerror("API error", err_text))
+                    logger.error("Excpption")#version 116
 
                 # Lisää virhe myös response_area:han
                 self.response_area.after(0, lambda: self._append_response_text(err_text))
@@ -552,32 +558,69 @@ class App:
             try:
                 key = API_KEY or self.get_prompt_text()
                 resp = session.post(API_URL, headers={"x-api-key": key}, timeout=timeout)
+                logger.info(
+                            "Sending reset request to %s",
+                            API_URL
+                        )#version 116
+
                 # Näytetään aina palvelimen vastaus (status + body) jotta käyttäjä näkee tuloksen
                 text = f"Reset response: {resp.status_code} - {resp.text}"
+                logger.info(
+                            "Reset response status=%s",
+                            resp.status_code
+                        )#version 116
+
+
+                logger.debug(
+                    "Reset response body=%s",
+                    resp.text
+                )#version 116
+
             except Exception as e:
                 # Jos jokin menee pieleen, näytetään virhe
+                logger.exception(
+                        "Reset request failed"
+                    )#version 116
                 text = f"Reset request failed: {e}"
             finally:
                 try:
                     session.close()
+                    logger.debug(
+                        "Reset session closed"
+                    )#version 116
                 except Exception:
+                    logger.exception(
+                        "Failed to close reset session"
+                    )#version 116
+
                     pass
                 # Päivitetään UI pääsäikeessä
                 try:
                     self.response_area.after(0, lambda: self._append_response_text(text))
+                    logger.debug(
+                            "Response text queued to UI"
+                        )#version 116
                 except Exception:
-                    print("Failed to append response text:", text)
+                   logger.exception(
+                        "Failed to append response text"
+                    )#version 116
                 # Palautetaan nappi takaisin Cancel-tilaan
                 def _reset_ui():
                     try:
                         self.cancel_button.config(text="Cancel", bootstyle="secondary", command=self.send_reset_request, state="normal")
                     except Exception:
+                        logger.exception(
+                            "Failed to restore cancel button"
+                        )#version 116
                         pass
                     # Merkitään reset päättyneeksi
                     self._cancel_event = None
                 try:
                     self.response_area.after(0, _reset_ui)
                 except Exception:
+                    logger.exception(
+                        "Failed to queue UI reset"
+                    )
                     _reset_ui()
 
         threading.Thread(target=_reset_worker, daemon=True).start()
@@ -610,10 +653,12 @@ class App:
         except Exception:
             # varmistus: jos response_area ei ole käytettävissä, tulosta konsoliin
             print(text)
-
+            logger.exception(
+                    "No response area %s", text
+                )  #version 116
 
 if __name__ == "__main__":
     root = tb.Window(themename="darkly")  # valitse esim. "darkly", "cyborg"
     app = App(root)
-    root.geometry("800x700")
+    root.geometry("1400x1000")
     root.mainloop()

@@ -2,8 +2,12 @@
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from .endpoints import generate_url, list_conversations_url, get_messages_url, delete_conversation_url, stats_url, request_details_url
+from .endpoints import generate_url, list_conversations_url, get_messages_url, delete_conversation_url, stats_url, request_details_url, analytics_summaries_url
 import os
+from common.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 DEFAULT_TIMEOUT = 620  # sekunteina
 
@@ -32,10 +36,17 @@ class ApiClient:
                 body = r.text
             except Exception:
                 body = "<no body>"
-            print(f"DEBUG: attempted reset -> status {r.status_code}, body: {body}")
-        except Exception as exc:
-            print(f"DEBUG: reset attempt failed: {exc}")
 
+                logger.debug(
+                    "Automatic reset attempted. Status=%s Body=%s",
+                    r.status_code,
+                    body
+                )  #version 116
+
+        except Exception:
+            logger.exception(
+                "Automatic reset attempt failed"
+            )  #version 116
 
     def generate(self, agent: str, prompt: str, model: str, conversation_title: str, user_id: str = None,):
         url = generate_url()
@@ -50,20 +61,53 @@ class ApiClient:
             payload["user_id"] = user_id
 
         try:
+            logger.info(
+                        "Sending generate request. Agent=%s Model=%s Topic=%s",
+                        agent,
+                        model,
+                        conversation_title
+                    )  #version 116
             resp = self.session.post(url, json=payload, timeout=self.timeout)
+            logger.debug(
+                        "Generate response status=%s",
+                        resp.status_code
+                    )  #version 116
             resp.raise_for_status()
             data = resp.json()
-            print("DEBUG PROXY RESPONSE:", data)
+            logger.debug(
+                    "Generate response payload=%s",
+                    data
+                )  #version 116
             self.last_request_id = data.get("request_id")
+            logger.info(
+                        "Generate successful. RequestId=%s Latency=%s Tokens=%s",
+                        data.get("request_id"),
+                        data.get("latency_ms"),
+                        data.get("tokens")
+                    )  #version 116
             return data
         except requests.exceptions.RequestException as req_exc: # Adding the automatic reset, if post failed in version 112
             # Kun pyyntö epäonnistuu (timeout, 502, 503, 504, yms.), yritetään automaattinen reset
-            print(f"DEBUG: generate request failed: {req_exc}; attempting automatic reset.")
+            logger.error(
+                        "Generate request failed. Agent=%s Model=%s Topic=%s Error=%s",
+                        agent,
+                        model,
+                        conversation_title,
+                        req_exc
+                    )  #version 116
+
             try:
                 self._attempt_reset()
+
+                logger.info(
+                    "Automatic reset completed"
+                )  #version 116
+
             except Exception:
-                pass
-            # Heitetään alkuperäinen poikkeus eteenpäin kutsujalle
+                logger.exception(
+                    "Automatic reset failed"
+                )  #version 116
+
             raise
     
     def list_conversations(self, agent: str, limit: int = 100, offset: int = 0):
@@ -116,6 +160,7 @@ class ApiClient:
     def delete_conversation(self, agent: str, conversation_title: str):
         url = delete_conversation_url(agent, conversation_title)
         resp = self.session.delete(url, timeout=self.timeout)
+        logger.info("Deleting %s", resp.text)  #version 116
         resp.raise_for_status()
         return resp.status_code == 200
 
@@ -130,4 +175,12 @@ class ApiClient:
         url = request_details_url(request_id)
         resp = self.session.get(url, timeout=self.timeout)
         resp.raise_for_status()
+        return resp.json()
+
+    def get_summaries(self, conversation_title: str, limit: int = 50):#version 116
+        url = analytics_summaries_url(conversation_title, limit)
+
+        resp = self.session.get(url, timeout=self.timeout)
+        resp.raise_for_status()
+
         return resp.json()

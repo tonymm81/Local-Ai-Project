@@ -31,3 +31,4 @@ ollama-dev-inspect.json
 ollama-inspect.json
 Mountit.MD
 *.txt
+/StressTest

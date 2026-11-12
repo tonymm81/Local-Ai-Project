@@ -2,6 +2,9 @@
 from typing import Dict, List
 from data.models import AgentData, Message
 from api.client import ApiClient
+from common.logger import get_logger
+
+logger = get_logger(__name__)#version 116
 
 class ServerRepository:
     def __init__(self, api_client: ApiClient, agent_keys: list = None):
@@ -11,7 +14,10 @@ class ServerRepository:
     def load_agent(self, agent_id: str) -> AgentData:
         """Hakee palvelimelta agentin topicit ja palauttaa AgentData (robustimpi parsing)."""
         resp = self.api.list_conversations(agent_id)
-        print("DEBUG: load_agent resp raw:", resp)   # poista debug myöhemmin
+        logger.debug(
+                    "load_agent raw response=%s",
+                    resp
+                )  #version 116   # poista debug myöhemmin
         titles = []
 
         if isinstance(resp, dict):
@@ -57,21 +63,53 @@ class ServerRepository:
 
         return AgentData(id=agent_id, display_name=agent_id, default_model=None, topics=uniq)
 
+    
     def get_messages(self, agent_id: str, conversation_title: str):
-        return self.api.get_messages(agent_id, conversation_title)
-
-    def get_messages(self, agent_id: str, conversation_title: str):
-        print(f"DEBUG: ServerRepository.get_messages called agent={agent_id!r} title={conversation_title!r}")
+        logger.info(
+        "Loading messages. Agent=%s Topic=%s",
+                                            agent_id,
+                                            conversation_title
+                                                )  #version 116        
         resp = self.api.get_messages(agent_id, conversation_title)
-        print("DEBUG: api.get_messages returned:", resp)
+        logger.debug(
+                    "get_messages response=%s",
+                    resp
+                )  #version 116
         return resp
 
     def generate(self, agent_id: str, prompt: str, model: str, conversation_title: str, user_id: str = None):
+        logger.info(
+                    "Generating response. Agent=%s Model=%s Topic=%s",
+                    agent_id,
+                    model,
+                    conversation_title
+                )  #version 116
         return self.api.generate(agent=agent_id, prompt=prompt, model=model, conversation_title=conversation_title, user_id=user_id)
 
 
     def delete_conversation(self, agent_id: str, conversation_title: str):
-        print(f"DEBUG: ServerRepository.delete_conversation called agent={agent_id!r} title={conversation_title!r}")
+        logger.info(
+                    "Deleting conversation. Agent=%s Topic=%s",
+                    agent_id,
+                    conversation_title
+                )  #version 116
         resp = self.api.delete_conversation(agent_id, conversation_title)
-        print("DEBUG: api.delete_conversation returned:", resp)
+        logger.debug(
+                "delete_conversation response=%s",
+                resp
+            )  #version 116
         return resp
+
+    def get_stats(self):# version 116
+        logger.debug(
+                    "Loading analytics statistics"
+                )  #version 116
+        return self.api.get_stats()
+
+    def get_summaries(self, conversation_title: str, limit: int = 50): #version 116
+        logger.debug(
+                    "Loading summaries. Topic=%s Limit=%s",
+                    conversation_title,
+                    limit
+                )  #version 116
+        return self.api.get_summaries(conversation_title, limit)

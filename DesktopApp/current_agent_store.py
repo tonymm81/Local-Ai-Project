@@ -2,6 +2,9 @@
 from typing import List, Optional
 from data.models import Message, AgentData
 from data.server_repo import ServerRepository
+from common.logger import get_logger
+
+logger = get_logger(__name__)
 
 class CurrentAgentStore:
     def __init__(self, repo: ServerRepository):
@@ -31,8 +34,10 @@ class CurrentAgentStore:
         if not self.agent_id:
             raise RuntimeError("No agent selected")
         resp = self.repo.get_messages(self.agent_id, topic)
-        print("DEBUG: load_messages_for_topic raw:", resp)
-
+        logger.debug(
+                        "load_messages_for_topic raw response=%s",
+                        resp
+                    )  #version 116
         items = []
         if isinstance(resp, dict):
             items = resp.get("messages") or resp.get("items") or []
@@ -94,12 +99,30 @@ class CurrentAgentStore:
 
     def delete_conversation(self, topic: str) -> bool:
         if not self.agent_id:
+            logger.error(
+                        "Delete conversation requested without selected agent"
+                        )  #version 116
             raise RuntimeError("No agent selected")
-        print("DEBUG: CurrentAgentStore.delete_conversation calling repo for topic:", topic)
+        logger.info(
+                    "Deleting conversation topic=%s agent=%s",
+                    topic,
+                    self.agent_id
+                )  #version 116
         ok = self.repo.delete_conversation(self.agent_id, topic)
-        print("DEBUG: repo.delete_conversation returned raw:", ok)
-        # jatka kuten ennen
+        logger.debug(
+                "delete_conversation repository response=%s",
+                ok
+            )  #version 116        # jatka kuten ennen
         if ok:
+            logger.info(
+                        "Conversation deleted successfully topic=%s",
+                        topic
+                    )  #version 116
             self.messages_cache.pop(topic, None)
             self.agent_data = self.repo.load_agent(self.agent_id)
+        else:
+            logger.warning(
+            "Conversation delete returned false topic=%s",
+            topic
+            )  #version 116
         return bool(ok)

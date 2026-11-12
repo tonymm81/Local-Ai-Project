@@ -1,0 +1,9 @@
+{
+  "agents": {
+    "pixatrail": "http://192.168.68.204:8080/generate",
+    "ollama-dev": "http://192.168.68.204:8080/generate",
+    "ollama-qwen": "http://192.168.68.204:8080/generate"
+  },
+  "api_url": "http://localhost:11435",
+  "websocket_url": "ws://localhost:11436"
+}

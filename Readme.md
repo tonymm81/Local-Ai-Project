@@ -193,6 +193,14 @@ good version on summarize the conversation to pixatrail ja phi2. So I add logic 
 
 - So far change seems to be good but lets continue testing and let see how this is working
 
+### version 116
+
+- Fixing analytics view. User can check the conversation summaries also.
+- Fixed missing conversation title in client ui
+- Fixed the delete conversation issue.
+- Adding the logger to program (not ready yet)
+
+
 #### plan 01
 - Next step is build a react native app for android, that I can send prompts to agent and use it from desktop app and mobile. Of course every returned responces returns also analytics from that sended prompt.
 
